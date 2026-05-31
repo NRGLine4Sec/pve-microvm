@@ -179,13 +179,23 @@ for param in $(cat /proc/cmdline); do
     esac
 done
 
-# Fallback: try /dev/vda if nothing parsed
+# Fallback: try /dev/vda if nothing parsed, then /dev/sda
 if [ -z "$ROOT_DEV" ]; then
     for i in 1 2 3 4 5 6 7 8 9 10; do
         [ -b /dev/vda ] && break
         sleep 0.2
     done
     ROOT_DEV=/dev/vda
+fi
+
+# If ROOT_DEV doesn't exist, try alternatives (handles PC/SCSI fallback)
+if [ ! -b "$ROOT_DEV" ]; then
+    for alt in /dev/sda /dev/sda1 /dev/vdb; do
+        if [ -b "$alt" ]; then
+            ROOT_DEV="$alt"
+            break
+        fi
+    done
 fi
 
 # Mount and switch to real root
