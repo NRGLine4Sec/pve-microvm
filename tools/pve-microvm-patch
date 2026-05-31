@@ -23,7 +23,7 @@ log() { echo "pve-microvm: $*"; }
 die() { echo "pve-microvm: ERROR: $*" >&2; exit 1; }
 
 cmd_apply() {
-    if [ -f "$STAMP" ]; then
+    if [ -f "$STAMP" ] && grep -q "PVE::QemuServer::MicroVM" "$QEMU_SERVER_PM" 2>/dev/null; then
         log "patches already applied (stamp exists), skipping"
         return 0
     fi
@@ -191,7 +191,7 @@ cmd_revert() {
 }
 
 cmd_status() {
-    if [ -f "$STAMP" ]; then
+    if [ -f "$STAMP" ] && grep -q "PVE::QemuServer::MicroVM" "$QEMU_SERVER_PM" 2>/dev/null; then
         echo "applied ($(cat "$STAMP"))"
     else
         echo "not applied"

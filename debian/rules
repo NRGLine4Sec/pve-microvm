@@ -11,6 +11,8 @@ override_dh_auto_install:
 	install -d $(CURDIR)/debian/pve-microvm/usr/share/pve-microvm
 	install -m 755 tools/pve-microvm-patch $(CURDIR)/debian/pve-microvm/usr/share/pve-microvm/
 	install -m 644 tools/MicroVM.pm $(CURDIR)/debian/pve-microvm/usr/share/pve-microvm/
+	install -d $(CURDIR)/debian/pve-microvm/usr/lib/systemd/system
+	install -m 644 tools/pve-microvm-early.service $(CURDIR)/debian/pve-microvm/usr/lib/systemd/system/
 	install -m 755 tools/microvm-init $(CURDIR)/debian/pve-microvm/usr/share/pve-microvm/
 	install -m 755 tools/microvm-setup $(CURDIR)/debian/pve-microvm/usr/share/pve-microvm/
 

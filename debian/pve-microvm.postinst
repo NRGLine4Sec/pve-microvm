@@ -1,15 +1,18 @@
 #!/bin/bash
-# pve-microvm postinst — apply patches to qemu-server on install or trigger
+# pve-microvm postinst — apply patches and enable early-boot service
 set -e
 
 case "$1" in
     configure)
-        # Remove stamp so apply works on the current (possibly new) files
+        # Apply patches to current qemu-server files
         rm -f /usr/share/pve-microvm/.applied
         /usr/share/pve-microvm/pve-microvm-patch apply
+        # Enable early-boot service to ensure patches survive reboots
+        systemctl daemon-reload 2>/dev/null || true
+        systemctl enable pve-microvm-early.service 2>/dev/null || true
         ;;
     triggered)
-        # qemu-server was upgraded — re-apply patches to new files
+        # qemu-server changed — re-apply patches
         echo "pve-microvm: qemu-server changed, re-applying patches..."
         rm -f /usr/share/pve-microvm/.applied
         /usr/share/pve-microvm/pve-microvm-patch apply
