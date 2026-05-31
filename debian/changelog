@@ -1,3 +1,14 @@
+pve-microvm (0.3.11-1) trixie; urgency=high
+
+  * Fix: VMs lost machine:microvm config on host reboot (onboot=1)
+  * Add pve-microvm-early.service: applies patches Before=pvedaemon
+  * Fix: parse_guest_agent compat with qemu-server 9.1.9+ API
+  * Initrd: fallback to /dev/sda if /dev/vda missing
+  * Patch script: idempotent (safe for repeated calls)
+  * Fixes boot-time config stripping that caused root mount failures
+
+ -- Rui Carmo <rui.carmo@gmail.com>  Sat, 31 May 2026 18:30:00 +0000
+
 pve-microvm (0.3.10-1) trixie; urgency=high
 
   * Fix: postinst no longer reverts to stale backup on upgrade
