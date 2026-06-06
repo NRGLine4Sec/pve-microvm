@@ -75,7 +75,9 @@ When `machine: microvm` is detected, `MicroVM.pm` automatically:
 - Uses PCIe with `pcie=on` and non-transitional virtio devices
 - Adds `virtio-balloon-pci-non-transitional` with `free-page-reporting=on` (guest returns freed pages to host automatically) and `deflate-on-oom=on` (reclaim balloon pages under OOM pressure)
 - Supports active auto-ballooning via PVE `balloon` config — set `balloon: 512` with `memory: 2048` to allow the host to reclaim between 512 MB and 2048 MB
-- Adds `virtio-mem-pci` for fine-grained live memory hot-add/remove when `virtio-mem` is set (e.g., `qm set 100 -virtio-mem 1024` with `memory: 2048` gives 1 GB base + 1 GB hotplug pool)
+- Adds `virtio-mem-pci` for fine-grained live memory hot-add/remove when `virtio-mem` is set (e.g., `qm set 100 -virtio-mem 1024` with `memory: 2048` gives 1 GB base + 1 GB hotplug pool). Grow/shrink live via QMP: `qom-set /objects/vmem0 requested-size <bytes>`. No PVE web UI affordance yet.
+
+**Caveat:** combining active ballooning (`balloon` target) and `virtio-mem` simultaneously can produce unpredictable behaviour in QEMU -- the balloon may fight the virtio-mem controller for the same pages. Use one or the other, not both.
 - Adds `vhost-vsock-pci-non-transitional` with CID = VMID + 1000 (if `/dev/vhost-vsock` exists)
 - Adds virtiofs device (if `pve-microvm-share` started a virtiofsd for this VM)
 - Adds 9p share devices (if `pve-microvm-9p` configured shares for this VM)

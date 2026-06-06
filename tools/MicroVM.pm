@@ -200,7 +200,8 @@ sub microvm_config_to_command {
 
     # ── Memory ───────────────────────────────────────────────────
     my $memory = $conf->{memory} || 512;
-    my $balloon_target = $conf->{balloon};  # PVE balloon target (min memory)
+    # PVE balloon target ($conf->{balloon}) is applied post-start via QMP by
+    # pvestatd's balloon controller -- no action needed here.  # PVE balloon target (min memory)
     my $virtio_mem_size = $conf->{'virtio-mem'};  # optional: virtio-mem hotplug pool in MB
 
     if (defined($virtio_mem_size) && $virtio_mem_size > 0) {

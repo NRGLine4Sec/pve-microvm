@@ -139,7 +139,7 @@ Full cluster: 4 nodes — see [Cluster Hardware](docs/cluster-hardware.md).
 |---|---|
 | Network off by default | Medium |
 | Egress allow-list (nftables) | Medium |
-| ~~Memory management~~ | ~~Done (v0.3.12)~~ | free-page-reporting, deflate-on-oom, auto-ballooning, virtio-mem hotplug |
+| ~~Memory management (free-page-reporting, deflate-on-oom, auto-ballooning, virtio-mem)~~ | ~~Done v0.3.12~~ |
 | Declarative VM config (TOML) | Low |
 | GPU passthrough | Low |
 | AArch64 guest support | Low |
