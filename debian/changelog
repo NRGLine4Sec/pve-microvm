@@ -1,3 +1,13 @@
+pve-microvm (0.3.12-1) trixie; urgency=medium
+
+  * Balloon: enable free-page-reporting (automatic MADV_FREE to host)
+  * Balloon: enable deflate-on-oom (reclaim under guest memory pressure)
+  * Balloon: expose PVE balloon target for active auto-ballooning
+  * New: virtio-mem-pci support for fine-grained live memory hot-add/remove
+  * Docs: memory management section in configuration.md
+
+ -- Rui Carmo <rui.carmo@gmail.com>  Fri, 06 Jun 2026 12:00:00 +0000
+
 pve-microvm (0.3.11-1) trixie; urgency=high
 
   * Fix: VMs lost machine:microvm config on host reboot (onboot=1)

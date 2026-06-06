@@ -5,7 +5,9 @@
 | Option | Notes |
 |---|---|
 | `machine` | Must be `microvm` |
-| `memory` | Static allocation (MiB) |
+| `memory` | Total allocation (MiB); max when virtio-mem is active |
+| `balloon` | Minimum memory (MiB) for auto-ballooning; PVE controller inflates/deflates between this and `memory` |
+| `virtio-mem` | Hot-pluggable memory pool (MiB); subtracted from `memory` as dynamically-addable via virtio-mem |
 | `cores` | vCPUs per socket |
 | `sockets` | CPU sockets |
 | `cpu` | CPU model (default: `host`) |
@@ -71,7 +73,9 @@ vga: serial0
 When `machine: microvm` is detected, `MicroVM.pm` automatically:
 
 - Uses PCIe with `pcie=on` and non-transitional virtio devices
-- Adds `virtio-balloon-pci-non-transitional` for memory reporting
+- Adds `virtio-balloon-pci-non-transitional` with `free-page-reporting=on` (guest returns freed pages to host automatically) and `deflate-on-oom=on` (reclaim balloon pages under OOM pressure)
+- Supports active auto-ballooning via PVE `balloon` config — set `balloon: 512` with `memory: 2048` to allow the host to reclaim between 512 MB and 2048 MB
+- Adds `virtio-mem-pci` for fine-grained live memory hot-add/remove when `virtio-mem` is set (e.g., `qm set 100 -virtio-mem 1024` with `memory: 2048` gives 1 GB base + 1 GB hotplug pool)
 - Adds `vhost-vsock-pci-non-transitional` with CID = VMID + 1000 (if `/dev/vhost-vsock` exists)
 - Adds virtiofs device (if `pve-microvm-share` started a virtiofsd for this VM)
 - Adds 9p share devices (if `pve-microvm-9p` configured shares for this VM)

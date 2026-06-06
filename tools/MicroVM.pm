@@ -200,12 +200,39 @@ sub microvm_config_to_command {
 
     # ── Memory ───────────────────────────────────────────────────
     my $memory = $conf->{memory} || 512;
-    push @$cmd, '-m', "${memory}M";
+    my $balloon_target = $conf->{balloon};  # PVE balloon target (min memory)
+    my $virtio_mem_size = $conf->{'virtio-mem'};  # optional: virtio-mem hotplug pool in MB
+
+    if (defined($virtio_mem_size) && $virtio_mem_size > 0) {
+        # virtio-mem: base memory is fixed, extra pool is hot-pluggable.
+        # Total guest-visible max = $memory, base = $memory - $virtio_mem_size.
+        my $base = $memory - $virtio_mem_size;
+        $base = 256 if $base < 256;  # floor: 256 MB base
+        my $maxmem = $memory;
+        push @$cmd, '-m', "${base}M,slots=1,maxmem=${maxmem}M";
+        # Memory backend for the virtio-mem region
+        push @$cmd, '-object', "memory-backend-ram,id=vmem0,size=${virtio_mem_size}M";
+        push @$cmd, '-device', "virtio-mem-pci,id=vmem0,memdev=vmem0,node=0,requested-size=0";
+    } else {
+        push @$cmd, '-m', "${memory}M";
+    }
 
     # ── Balloon device ───────────────────────────────────────────
-    # virtio-balloon-pci-non-transitional suppresses the PVE post-start
-    # balloon warning and enables memory reporting.
-    push @$cmd, '-device', 'virtio-balloon-pci-non-transitional,id=balloon0';
+    # virtio-balloon with free-page-reporting (guest returns freed pages to
+    # host via MADV_FREE automatically) and deflate-on-oom (guest reclaims
+    # ballooned pages under memory pressure instead of OOM-killing).
+    my @balloon_flags = (
+        'virtio-balloon-pci-non-transitional',
+        'id=balloon0',
+        'free-page-reporting=on',
+        'deflate-on-oom=on',
+    );
+    push @$cmd, '-device', join(',', @balloon_flags);
+
+    # If PVE balloon target is set, the QMP controller can inflate/deflate
+    # between $balloon_target and $memory.  The target is applied post-start
+    # by PVE's balloon_stat monitoring via QMP balloon commands.  We just
+    # need the device present with the correct max (already set via -m).
 
     # ── Serial console ───────────────────────────────────────────
     # Primary console for microvm — accessible via `qm terminal $vmid`
