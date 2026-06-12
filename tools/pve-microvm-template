@@ -127,27 +127,50 @@ list_templates() {
 REFRESH=0
 ACTION="create"
 
-# Parse args
+require_value() {
+    local opt="$1"
+    local value="${2:-}"
+    [ -n "$value" ] || die "$opt requires a value"
+    case "$value" in
+        --*) die "$opt requires a value" ;;
+    esac
+    printf '%s\n' "$value"
+}
+
+# Parse args.  Support both "--flag value" and "--flag=value" forms so the
+# GUI wizard and manual CLI use the same code path, and fail cleanly on
+# missing values instead of tripping set -u on $2.
 load_config
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --image)     IMAGE="$2"; shift 2 ;;
-        --vmid)      TEMPLATE_VMID="$2"; shift 2 ;;
-        --name)      TEMPLATE_NAME="$2"; shift 2 ;;
-        --storage)   STORAGE="$2"; shift 2 ;;
-        --disk-size) DISK_SIZE="$2"; shift 2 ;;
-        --memory)    MEMORY="$2"; shift 2 ;;
-        --cores)     CORES="$2"; shift 2 ;;
-        --profile)   PROFILE="$2"; shift 2 ;;
-        --no-docker) INSTALL_DOCKER=0; shift ;;
-        --no-ssh)    INSTALL_SSH=0; shift ;;
-        --no-agent)  INSTALL_AGENT=0; shift ;;
-        --list)      ACTION="list"; shift ;;
-        --refresh)   REFRESH=1; shift ;;
-        --help|-h)   usage 0 ;;
-        *)           die "unknown argument: $1" ;;
+        --image)       IMAGE=$(require_value "$1" "${2:-}"); shift 2 ;;
+        --image=*)     IMAGE="${1#*=}"; [ -n "$IMAGE" ] || die "--image requires a value"; shift ;;
+        --vmid)        TEMPLATE_VMID=$(require_value "$1" "${2:-}"); shift 2 ;;
+        --vmid=*)      TEMPLATE_VMID="${1#*=}"; [ -n "$TEMPLATE_VMID" ] || die "--vmid requires a value"; shift ;;
+        --name)        TEMPLATE_NAME=$(require_value "$1" "${2:-}"); shift 2 ;;
+        --name=*)      TEMPLATE_NAME="${1#*=}"; [ -n "$TEMPLATE_NAME" ] || die "--name requires a value"; shift ;;
+        --storage)     STORAGE=$(require_value "$1" "${2:-}"); shift 2 ;;
+        --storage=*)   STORAGE="${1#*=}"; [ -n "$STORAGE" ] || die "--storage requires a value"; shift ;;
+        --disk-size)   DISK_SIZE=$(require_value "$1" "${2:-}"); shift 2 ;;
+        --disk-size=*) DISK_SIZE="${1#*=}"; [ -n "$DISK_SIZE" ] || die "--disk-size requires a value"; shift ;;
+        --memory)      MEMORY=$(require_value "$1" "${2:-}"); shift 2 ;;
+        --memory=*)    MEMORY="${1#*=}"; [ -n "$MEMORY" ] || die "--memory requires a value"; shift ;;
+        --cores)       CORES=$(require_value "$1" "${2:-}"); shift 2 ;;
+        --cores=*)     CORES="${1#*=}"; [ -n "$CORES" ] || die "--cores requires a value"; shift ;;
+        --profile)     PROFILE=$(require_value "$1" "${2:-}"); shift 2 ;;
+        --profile=*)   PROFILE="${1#*=}"; [ -n "$PROFILE" ] || die "--profile requires a value"; shift ;;
+        --no-docker)   INSTALL_DOCKER=0; shift ;;
+        --no-ssh)      INSTALL_SSH=0; shift ;;
+        --no-agent)    INSTALL_AGENT=0; shift ;;
+        --list)        ACTION="list"; shift ;;
+        --refresh)     REFRESH=1; shift ;;
+        --help|-h)     usage 0 ;;
+        *)             die "unknown argument: $1" ;;
     esac
 done
+
+[[ "$MEMORY" =~ ^[0-9]+$ ]] && [ "$MEMORY" -gt 0 ] || die "--memory must be a positive integer (MiB)"
+[[ "$CORES" =~ ^[0-9]+$ ]] && [ "$CORES" -gt 0 ] || die "--cores must be a positive integer"
 
 # Apply profile presets
 case "$PROFILE" in
