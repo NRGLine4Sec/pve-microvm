@@ -1,3 +1,14 @@
+pve-microvm (0.3.13-1) trixie; urgency=medium
+
+  * Fix: pve-microvm-template accepts GUI-generated --memory and --cores
+  * Harden pve-microvm-template argument parser with --flag=value support,
+    clean missing-value errors, and positive integer validation
+  * Docs: make installation instructions version-agnostic via latest release
+  * Docs: add AGENTS.md with development, testing, and PVE upgrade processes
+  * CI: add local/CI test suite and gate release workflow on tests
+
+ -- Rui Carmo <rui.carmo@gmail.com>  Fri, 12 Jun 2026 19:25:00 +0000
+
 pve-microvm (0.3.12-1) trixie; urgency=medium
 
   * Balloon: enable free-page-reporting (automatic MADV_FREE to host)
