@@ -63,6 +63,8 @@ Options:
   --name NAME        Template name (default: $TEMPLATE_NAME)
   --storage STORE    PVE storage (default: $STORAGE)
   --disk-size SIZE   Disk size (default: $DISK_SIZE)
+  --memory MiB       Memory in MiB (default: $MEMORY)
+  --cores N          CPU cores (default: $CORES)
   --profile PROFILE  minimal|standard|full (see below)
   --no-docker        Skip Docker CE installation
   --no-ssh           Skip OpenSSH server installation
@@ -134,6 +136,8 @@ while [[ $# -gt 0 ]]; do
         --name)      TEMPLATE_NAME="$2"; shift 2 ;;
         --storage)   STORAGE="$2"; shift 2 ;;
         --disk-size) DISK_SIZE="$2"; shift 2 ;;
+        --memory)    MEMORY="$2"; shift 2 ;;
+        --cores)     CORES="$2"; shift 2 ;;
         --profile)   PROFILE="$2"; shift 2 ;;
         --no-docker) INSTALL_DOCKER=0; shift ;;
         --no-ssh)    INSTALL_SSH=0; shift ;;
