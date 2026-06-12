@@ -51,8 +51,9 @@ is already on every PVE node.
 ## Quick start
 
 ```bash
-# Install
-dpkg -i pve-microvm_0.3.11-1_all.deb
+# Install (always fetches the latest release)
+curl -sLO $(curl -s https://api.github.com/repos/rcarmo/pve-microvm/releases/latest | grep browser_download_url | grep '.deb' | cut -d'"' -f4)
+dpkg -i pve-microvm_*.deb
 
 # Create a template from any OCI image
 pve-microvm-template --image debian:trixie-slim
