@@ -1,12 +1,15 @@
 PACKAGE = pve-microvm
 VERSION = 0.1.0
 
-.PHONY: all build install clean deb kernel
+.PHONY: all build install clean deb kernel test
 
 all: build
 
 build:
 	@echo "Nothing to compile (kernel built separately via CI or kernel/build-kernel.sh)"
+
+test:
+	tests/run-tests.sh
 
 kernel:
 	cd kernel && ./build-kernel.sh --version 6.12.22 --output vmlinuz-microvm

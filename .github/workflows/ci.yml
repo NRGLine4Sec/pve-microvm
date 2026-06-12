@@ -18,6 +18,9 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq dpkg-dev debhelper fakeroot build-essential
 
+      - name: Run test suite
+        run: tests/run-tests.sh
+
       - name: Build .deb (no kernel)
         run: |
           dpkg-buildpackage -us -uc -b
