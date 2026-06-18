@@ -145,6 +145,15 @@ run_test "virtio-mem device exists" assert_file_contains tools/MicroVM.pm 'virti
 run_test "virtio-mem starts with requested-size=0" assert_file_contains tools/MicroVM.pm 'requested-size=0'
 run_test "no stale balloon_target assignment" assert_file_not_contains tools/MicroVM.pm 'my \$balloon_target'
 
+log "Kernel config contracts"
+run_test "kernel enables TUN/TAP" assert_file_contains kernel/pve-microvm-overlay.config '^CONFIG_TUN=y$'
+run_test "kernel enables netfilter advanced" assert_file_contains kernel/pve-microvm-overlay.config '^CONFIG_NETFILTER_ADVANCED=y$'
+run_test "kernel enables nftables inet family" assert_file_contains kernel/pve-microvm-overlay.config '^CONFIG_NF_TABLES_INET=y$'
+run_test "kernel enables nft NAT" assert_file_contains kernel/pve-microvm-overlay.config '^CONFIG_NFT_NAT=y$'
+run_test "kernel enables nft masquerade" assert_file_contains kernel/pve-microvm-overlay.config '^CONFIG_NFT_MASQ=y$'
+run_test "kernel enables IPv6 NAT" assert_file_contains kernel/pve-microvm-overlay.config '^CONFIG_IP6_NF_NAT=y$'
+run_test "kernel enables bridge netfilter" assert_file_contains kernel/pve-microvm-overlay.config '^CONFIG_BRIDGE_NETFILTER=y$'
+
 log "Patch-script safety contracts"
 run_test "patch script has stamp/idempotency guard" assert_file_contains tools/pve-microvm-patch 'patches already applied'
 run_test "patch script delegates config_to_command once per apply path" assert_file_contains tools/pve-microvm-patch 'delegate to microvm command builder'

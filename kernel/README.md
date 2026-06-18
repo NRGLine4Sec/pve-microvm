@@ -47,7 +47,8 @@ On top of the Firecracker base, we apply `pve-microvm-overlay.config` which adds
 |---|---|---|
 | VLAN 802.1Q | `CONFIG_VLAN_8021Q=y` | Proxmox bridges use VLAN tags |
 | cgroup controllers | `CONFIG_MEMCG=y`, `CGROUP_PIDS`, etc. | systemd guests, container workloads |
-| iptables/nftables | `CONFIG_NF_CONNTRACK=y`, etc. | Firewall/NAT inside guests |
+| TUN/TAP | `CONFIG_TUN=y` | VPNs, Tailscale, OpenVPN, userspace WireGuard, CNI plugins |
+| iptables/nftables | `CONFIG_NF_CONNTRACK=y`, `CONFIG_NFT_NAT=y`, etc. | Firewall/NAT/masquerade inside guests |
 | XFS | `CONFIG_XFS_FS=y` | Alternative rootfs filesystem |
 | Loop device | `CONFIG_BLK_DEV_LOOP=y` | Mount images inside guest |
 | Watchdog | `CONFIG_SOFT_WATCHDOG=y` | Guest health monitoring |
