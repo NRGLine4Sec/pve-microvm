@@ -1,3 +1,13 @@
+pve-microvm (0.3.14-1) trixie; urgency=medium
+
+  * Kernel: enable TUN/TAP support for /dev/net/tun workloads
+  * Kernel: broaden netfilter/nftables support for guest firewalling,
+    NAT, masquerade, VPNs, Tailscale/OpenVPN/userspace WireGuard, and CNI
+  * Tests: add kernel config contracts for TUN and netfilter coverage
+  * Docs: document TUN/TAP and expanded firewall/NAT kernel support
+
+ -- Rui Carmo <rui.carmo@gmail.com>  Thu, 18 Jun 2026 20:40:00 +0000
+
 pve-microvm (0.3.13-1) trixie; urgency=medium
 
   * Fix: pve-microvm-template accepts GUI-generated --memory and --cores
