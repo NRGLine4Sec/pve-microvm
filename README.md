@@ -13,7 +13,7 @@ Runs OCI container images, [Firecracker rootfs images](docs/firecracker.md), uni
 > has not been tested in production. Use at your own risk. The patches are
 > fully reversible — uninstalling the package restores the original files.
 
-📝 [Blog post with some background](https://taoofmac.com/space/notes/2026/04/19/1400#proxmox-microvms) · ❓ [FAQ](docs/faq.md)
+📝 [Blog post with some background](https://taoofmac.com/space/blog/2026/06/18/1845) · ❓ [FAQ](docs/faq.md)
 
 ---
 
