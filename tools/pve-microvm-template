@@ -465,15 +465,15 @@ if echo "$IMAGE" | grep -qi '^smolbsd'; then
     install -m 644 kernels/netbsd-SMOL /usr/share/pve-microvm/netbsd-smol
 
     log "Creating SmolBSD template VM $TEMPLATE_VMID..."
-    qm create "$TEMPLATE_VMID" \\
-        --machine microvm \\
-        --memory "${MEMORY:-64}" \\
-        --cores "${CORES:-1}" \\
-        --name "${TEMPLATE_NAME:-microvm-smolbsd}" \\
-        --serial0 socket --vga serial0 \\
-        --net0 virtio,bridge=vmbr0 \\
-        --tags "$TAGS,smolbsd,netbsd" \\
-        --args "-kernel /usr/share/pve-microvm/netbsd-smol -append \\"console=com root=dk0\\"" 2>&1 || die "qm create failed"
+    qm create "$TEMPLATE_VMID" \
+        --machine microvm \
+        --memory "${MEMORY:-64}" \
+        --cores "${CORES:-1}" \
+        --name "${TEMPLATE_NAME:-microvm-smolbsd}" \
+        --serial0 socket --vga serial0 \
+        --net0 virtio,bridge=vmbr0 \
+        --tags "$TAGS,smolbsd,netbsd" \
+        --args "-kernel /usr/share/pve-microvm/netbsd-smol -append \"console=com root=dk0\"" 2>&1 || die "qm create failed"
 
     log "Importing disk..."
     IMPORT_OUT=$(qm importdisk "$TEMPLATE_VMID" images/rescue-amd64.img "$STORAGE" 2>&1)
