@@ -1,3 +1,10 @@
+pve-microvm (0.3.15-1) trixie; urgency=medium
+
+  * Fix: SmolBSD template creation command now uses valid shell line
+    continuations and preserves the NetBSD kernel append argument quoting
+
+ -- Rui Carmo <rui.carmo@gmail.com>  Tue, 23 Jun 2026 18:20:00 +0000
+
 pve-microvm (0.3.14-1) trixie; urgency=medium
 
   * Kernel: enable TUN/TAP support for /dev/net/tun workloads
