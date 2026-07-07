@@ -146,6 +146,8 @@ run_test "virtio-mem starts with requested-size=0" assert_file_contains tools/Mi
 run_test "no stale balloon_target assignment" assert_file_not_contains tools/MicroVM.pm 'my \$balloon_target'
 
 log "Kernel config contracts"
+run_test "kernel build merges PVE overlay" assert_file_contains kernel/build-kernel.sh 'pve-microvm-overlay\.config'
+run_test "kernel verifies TUN survives olddefconfig" assert_file_contains kernel/build-kernel.sh 'CONFIG_TUN'
 run_test "kernel enables TUN/TAP" assert_file_contains kernel/pve-microvm-overlay.config '^CONFIG_TUN=y$'
 run_test "kernel enables netfilter advanced" assert_file_contains kernel/pve-microvm-overlay.config '^CONFIG_NETFILTER_ADVANCED=y$'
 run_test "kernel enables nftables inet family" assert_file_contains kernel/pve-microvm-overlay.config '^CONFIG_NF_TABLES_INET=y$'

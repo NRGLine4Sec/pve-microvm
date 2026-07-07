@@ -90,12 +90,21 @@ if [ -f "${SCRIPT_DIR}/pve-microvm-6.12.config" ]; then
     }
 fi
 
+# Merge the PVE feature overlay (TUN/TAP, netfilter/nftables, cgroups, etc.).
+# This used to be documented but not applied by the CI kernel build path, so
+# features added only to the overlay never reached release kernels.
+if [ -f "${SCRIPT_DIR}/pve-microvm-overlay.config" ]; then
+    scripts/kconfig/merge_config.sh -m .config "${SCRIPT_DIR}/pve-microvm-overlay.config" >/dev/null 2>&1 || {
+        cat "${SCRIPT_DIR}/pve-microvm-overlay.config" >> .config
+    }
+fi
+
 # Resolve dependencies
 make olddefconfig >/dev/null 2>&1
 
 # Verify critical configs survived olddefconfig
 echo "Verifying critical configs..."
-for cfg in CONFIG_VIRTIO_NET CONFIG_VIRTIO_BALLOON CONFIG_VIRTIO_CONSOLE CONFIG_VIRTIO_BLK CONFIG_VIRTIO_MMIO CONFIG_MODULES CONFIG_NET CONFIG_NETDEVICES CONFIG_NET_FAILOVER CONFIG_FAILOVER CONFIG_ETHERNET CONFIG_VIRTIO_PCI CONFIG_PCI CONFIG_NET_CORE CONFIG_DIMLIB; do
+for cfg in CONFIG_VIRTIO_NET CONFIG_VIRTIO_BALLOON CONFIG_VIRTIO_CONSOLE CONFIG_VIRTIO_BLK CONFIG_VIRTIO_MMIO CONFIG_MODULES CONFIG_NET CONFIG_NETDEVICES CONFIG_NET_FAILOVER CONFIG_FAILOVER CONFIG_ETHERNET CONFIG_VIRTIO_PCI CONFIG_PCI CONFIG_NET_CORE CONFIG_DIMLIB CONFIG_TUN CONFIG_NF_TABLES CONFIG_NFT_NAT CONFIG_NFT_MASQ CONFIG_IP_NF_NAT CONFIG_IP6_NF_NAT; do
     val=$(grep "^${cfg}=" .config 2>/dev/null || echo "${cfg} NOT SET")
     echo "  $val"
 done
