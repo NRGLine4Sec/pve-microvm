@@ -1,3 +1,11 @@
+pve-microvm (0.3.26-1) trixie; urgency=high
+
+  * Fix WebUI upgrade interruption (#20): gracefully reload pvedaemon through
+    deb-systemd-invoke after configure and trigger patching.
+  * Exercise both package-hook paths and document interruption recovery.
+
+ -- Rui Carmo <rui.carmo@gmail.com>  Wed, 30 Sep 2026 20:06:00 +0000
+
 pve-microvm (0.3.25-1) trixie; urgency=high
 
   * Audit fixes: guarded cleanup and refresh, verified rollback, strict failure

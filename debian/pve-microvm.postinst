@@ -11,17 +11,19 @@ case "$1" in
         # Enable early-boot service to ensure patches survive reboots
         systemctl daemon-reload 2>/dev/null || true
         systemctl enable pve-microvm-early.service 2>/dev/null || true
-        # pvedaemon is a long-lived Perl process and otherwise keeps the old
-        # MicroVM.pm loaded for UI/API/pvesh requests after package upgrades.
-        systemctl try-restart pvedaemon.service 2>/dev/null || true
+        # pvedaemon caches Perl modules. Its graceful reload re-execs the
+        # daemon while preserving WebUI terminal/upgrade children. A full
+        # restart would kill those children, including this package update.
+        # Use Debian's helper to respect local service-start policy.
+        deb-systemd-invoke reload-or-try-restart pvedaemon.service || true
         ;;
     triggered)
         # qemu-server changed — apply if its files were replaced. The patcher
         # checks the actual markers as well as the stamp.
         echo "pve-microvm: qemu-server changed, checking patches..."
         /usr/share/pve-microvm/pve-microvm-patch apply
-        # Reload the command builder used by UI/API/pvesh VM starts.
-        systemctl try-restart pvedaemon.service 2>/dev/null || true
+        # The qemu-server trigger needs the same graceful code refresh.
+        deb-systemd-invoke reload-or-try-restart pvedaemon.service || true
         ;;
 esac
 

@@ -1,6 +1,14 @@
 # Changelog
 
-## Unreleased
+## 0.3.26
+
+* Gracefully reload `pvedaemon` after package configuration and qemu-server
+  triggers, preserving WebUI upgrade terminals while refreshing cached Perl
+  code. Replaces the full restart introduced in 0.3.20 ([#20](https://github.com/rcarmo/pve-microvm/issues/20)).
+* Execute both package-hook paths in regression tests; document the
+  [root cause and recovery](rca-issue-20.md).
+
+## 0.3.25
 
 - Refuse template refresh for ordinary or running VMs; check prerequisites before deleting a template and abort on failed deletion.
 - Preserve build directories whenever bind mounts remain or mount inventory fails, avoiding recursive deletion through host mounts.

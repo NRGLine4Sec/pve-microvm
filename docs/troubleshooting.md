@@ -94,8 +94,24 @@ an older qemu-server version. Apply the current patch set directly:
 ```bash
 rm -f /usr/share/pve-microvm/.applied
 /usr/share/pve-microvm/pve-microvm-patch apply
-systemctl restart pvedaemon
+systemctl reload pvedaemon
 ```
+
+## WebUI package update disconnects after patching
+
+Versions 0.3.20 through 0.3.25 fully restarted `pvedaemon` after applying patches.
+That can terminate the WebUI terminal and the package update running beneath it.
+The `Disconnecting... (Detecting migration...)` banner does not establish that a
+VM migrated or that the update completed.
+
+Upgrade to 0.3.26 or later, which uses Proxmox's graceful reload action. When
+recovering from an interrupted update, connect over SSH and first check whether
+an `apt` or `dpkg` process is still running. Do not remove lock files or start a
+second package manager while one is active. Once it has stopped, inspect
+`dpkg --audit` and `/var/log/apt/term.log`; use `dpkg --configure -a` to finish
+pending configuration if needed, then retry the upgrade over SSH.
+
+See [the #20 RCA](rca-issue-20.md) for the process lifecycle and canary tests.
 
 ## pve-oci-import fails: "required tool not found"
 

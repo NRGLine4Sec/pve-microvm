@@ -1,24 +1,26 @@
-# v0.3.25
+# v0.3.26
 
-This release fixes unsafe cleanup and refresh paths, preserves command failures,
-and honours read-only disk settings. Template cleanup now keeps the build directory
-when bind mounts remain or mount inspection fails; refresh refuses ordinary or
-running VMs and checks prerequisites before deletion.
+WebUI package updates can be interrupted when pve-microvm restarts the daemon
+hosting their terminal. This patch release replaces that full restart with
+Proxmox's graceful `deb-systemd-invoke reload-or-try-restart` action in both
+package configuration and qemu-server trigger hooks. Cached Perl code is still
+refreshed; existing terminal children are preserved on PVE's reload path.
 
-Patch application validates both upstream Perl layouts before changing either file.
-Rollback verifies the saved originals and patched files rather than restoring stale
-PVE code. **Legacy installations without verified backup provenance refuse automatic
-removal**; reconcile backups with the installed qemu-server package before removing
-pve-microvm. Upgrades remain supported.
+The restart was introduced in v0.3.20. Versions through v0.3.25 can disconnect
+the terminal and terminate the package manager beneath it. The yellow
+`Disconnecting... (Detecting migration...)` message does not establish that a
+VM migrated or that the update completed.
 
-The ephemeral runner cleans up after configuration failures and preserves guest exit
-codes. OCI imports retain failure diagnostics and abort on failed disk attachment.
-Required kernel configuration checks now fail the build instead of just logging errors.
-The missing 9Front download has also been restored.
+If an update was interrupted, use SSH to check for an active apt/dpkg process
+before starting another transaction. Once it has stopped, inspect `dpkg --audit`
+and `/var/log/apt/term.log`; finish pending configuration with `dpkg --configure -a`
+if needed, then retry the upgrade over SSH. Do not delete active lock files.
 
-Validation: 88 tests pass; the Debian candidate installed on borg and z83ii, repeated
-patch application was idempotent, and isolated Debian guest boots passed on both.
-z83ii also built a fresh Debian template. Existing borg VM IDs and process IDs were
-unchanged. Candidate tests used the deployed kernel/initrd; release CI rebuilds them.
+Validation: 88 tests pass. On idle z83ii (PVE manager 9.2.20), the old restart
+terminated a disposable terminal/child in the daemon cgroup. A graceful reload
+preserved both. The fixed Debian candidate installed through that terminal and
+completed both configure and trigger paths without disconnecting it. No real
+system-wide apt upgrade or browser automation was used for these checks.
 
-See [the audit report](docs/audit-2026-09-05.md) for test boundaries and remaining limitations.
+See [issue #20](https://github.com/rcarmo/pve-microvm/issues/20) and the
+[RCA](docs/rca-issue-20.md) for the process lifecycle, test results and recovery.
