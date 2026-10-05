@@ -6,6 +6,13 @@
 
 set -euo pipefail
 
+# Source-tree and installed tools share the same explicit host mapping.
+ENV_HELPER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/pve-microvm-env.sh"
+[ -f "$ENV_HELPER" ] || ENV_HELPER=/usr/share/pve-microvm/pve-microvm-env.sh
+source "$ENV_HELPER"
+pve_microvm_env benchmark
+
+
 PROG=$(basename "$0")
 VMID="${1:-999}"
 STORAGE="${2:-local-lvm}"
@@ -18,7 +25,8 @@ cleanup() {
     sleep 2
     qm destroy "$VMID" --purge >/dev/null 2>&1 || true
 }
-trap cleanup EXIT
+WORK=""
+trap 'cleanup; [ -z "$WORK" ] || rm -rf "$WORK"' EXIT
 
 log "=== pve-microvm benchmark ==="
 log "VMID: $VMID, Storage: $STORAGE"

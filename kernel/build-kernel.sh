@@ -13,8 +13,15 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ORIG_DIR="$(pwd)"
+ENV_HELPER="$SCRIPT_DIR/../tools/pve-microvm-env.sh"
+[ -f "$ENV_HELPER" ] || ENV_HELPER="$SCRIPT_DIR/../pve-microvm-env.sh"
+source "$ENV_HELPER"
+pve_microvm_env kernel
+KERNEL_DIR=${PVE_MICROVM_KERNEL_DIR:-$PVE_MICROVM_BUILD_DIR/kernel}
+mkdir -p "$KERNEL_DIR" "$PVE_MICROVM_CACHE_DIR/kernel"
+
 DEFAULT_VERSION="6.12.22"
-DEFAULT_OUTPUT="${SCRIPT_DIR}/vmlinuz-microvm"
+DEFAULT_OUTPUT="$KERNEL_DIR/vmlinuz-microvm"
 
 VERSION="$DEFAULT_VERSION"
 OUTPUT=""
@@ -40,7 +47,11 @@ elif [[ "$OUTPUT" != /* ]]; then
 fi
 
 MAJOR=$(echo "$VERSION" | cut -d. -f1)
-BUILD_DIR="/tmp/pve-microvm-kernel-build"
+[[ "$OUTPUT" = "$PVE_MICROVM_BUILD_DIR/"* ]] || { echo 'Kernel output must be below the project build directory' >&2; exit 1; }
+BUILD_DIR=$(mktemp -d "$PVE_MICROVM_BUILD_DIR/kernel-work.XXXXXX")
+MOD_DIR=""; INITRD_DIR=""
+cleanup() { [ -z "$MOD_DIR" ] || rm -rf "$MOD_DIR"; [ -z "$INITRD_DIR" ] || rm -rf "$INITRD_DIR"; }
+trap cleanup EXIT
 
 echo "=== pve-microvm kernel builder ==="
 echo "Kernel version: $VERSION"
@@ -61,11 +72,11 @@ mkdir -p "$BUILD_DIR"
 cd "$BUILD_DIR"
 
 # Download kernel source
-TARBALL="linux-${VERSION}.tar.xz"
+TARBALL="$PVE_MICROVM_CACHE_DIR/kernel/linux-${VERSION}.tar.xz"
 if [ ! -f "$TARBALL" ]; then
     echo "Downloading kernel ${VERSION}..."
     wget -q --show-progress \
-        "https://cdn.kernel.org/pub/linux/kernel/v${MAJOR}.x/${TARBALL}"
+        "https://cdn.kernel.org/pub/linux/kernel/v${MAJOR}.x/linux-${VERSION}.tar.xz" -O "$TARBALL"
 fi
 
 # Extract

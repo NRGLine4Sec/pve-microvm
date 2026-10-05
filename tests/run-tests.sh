@@ -301,6 +301,8 @@ run_test "kernel enables nft masquerade" assert_file_contains kernel/pve-microvm
 run_test "kernel enables IPv6 NAT" assert_file_contains kernel/pve-microvm-overlay.config '^CONFIG_IP6_NF_NAT=y$'
 run_test "kernel enables bridge netfilter" assert_file_contains kernel/pve-microvm-overlay.config '^CONFIG_BRIDGE_NETFILTER=y$'
 
+run_test "project-owned scratch and external mapping" bash tests/test-project-paths.sh
+
 log "Patch-script safety contracts"
 run_test "patch script has stamp/idempotency guard" assert_file_contains tools/pve-microvm-patch 'patches already applied'
 run_test "patch script delegates config_to_command once per apply path" assert_file_contains tools/pve-microvm-patch 'delegate to microvm command builder'

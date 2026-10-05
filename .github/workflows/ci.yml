@@ -13,20 +13,33 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Configure project scratch root
+        run: |
+          echo "PROJECT_TMP_BASE=$RUNNER_TEMP" >> "$GITHUB_ENV"
+          echo "PROJECT_TMP_ROOT=$RUNNER_TEMP/pve-microvm" >> "$GITHUB_ENV"
+
       - name: Install packaging tools
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq dpkg-dev debhelper fakeroot build-essential
 
+      - name: Install profiling tools
+        run: sudo apt-get install -y -qq valgrind
+
       - name: Run test suite
-        run: tests/run-tests.sh
+        run: make test
+
+      - name: Retain test profiles and logs
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: test-profiles
+          path: docs/evidence/path-policy/
+          retention-days: 14
 
       - name: Build .deb (no kernel)
-        run: |
-          dpkg-buildpackage -us -uc -b
-          mkdir -p dist
-          mv ../pve-microvm_*.deb dist/
-          ls -lh dist/
+        run: make deb
 
       - name: Inspect package
-        run: dpkg-deb -c dist/pve-microvm_*.deb
+        run: |
+          find "$PROJECT_TMP_ROOT/build/deb" -name 'pve-microvm_*.deb' -exec dpkg-deb -c {} \;

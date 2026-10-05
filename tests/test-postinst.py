@@ -10,6 +10,14 @@ source = (ROOT / 'debian/pve-microvm.postinst').read_text()
 patcher = '/usr/share/pve-microvm/pve-microvm-patch'
 assert source.count(patcher) == 2
 
+# Direct invocations must use the same owned scratch/cache configuration.
+import os, sys
+ROOT_ENV = Path(__file__).resolve().parents[1]
+if not os.environ.get('PVE_MICROVM_RUN_DIR'):
+    raise SystemExit(subprocess.run(['bash', str(ROOT_ENV / 'tools/pve-microvm-env.sh'),
+                                    '--exec', 'tests', sys.executable, *sys.argv]).returncode)
+os.chdir(ROOT_ENV)
+
 with tempfile.TemporaryDirectory(prefix='microvm-postinst-') as tmp:
     root = Path(tmp)
     stub = '''#!/bin/sh

@@ -10,3 +10,6 @@ debian/pve-microvm.substvars
 *.changes
 
 kernel/vmlinuz-microvm
+
+# Retained profiling evidence is separate from disposable build output.
+docs/evidence/

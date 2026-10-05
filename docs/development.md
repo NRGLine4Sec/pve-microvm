@@ -57,7 +57,7 @@ pve-microvm/
 
 ```bash
 # Build .deb (without kernel)
-dpkg-buildpackage -us -uc -b
+make deb
 
 # Build kernel + initrd
 cd kernel && ./build-kernel.sh

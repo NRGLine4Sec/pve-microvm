@@ -4,6 +4,14 @@ import re
 import subprocess
 import tempfile
 
+# Direct invocations must use the same owned scratch/cache configuration.
+import os, sys
+ROOT_ENV = Path(__file__).resolve().parents[1]
+if not os.environ.get('PVE_MICROVM_RUN_DIR'):
+    raise SystemExit(subprocess.run(['bash', str(ROOT_ENV / 'tools/pve-microvm-env.sh'),
+                                    '--exec', 'tests', sys.executable, *sys.argv]).returncode)
+os.chdir(ROOT_ENV)
+
 script = Path('tools/pve-microvm-template').read_text()
 cleanup = re.search(r'cleanup_build\(\) \{.*?\n\}', script, re.S).group()
 with tempfile.TemporaryDirectory() as tmp:

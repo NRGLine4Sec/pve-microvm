@@ -15,10 +15,17 @@
 
 set -euo pipefail
 
+# Source-tree and installed tools share the same explicit host mapping.
+ENV_HELPER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/pve-microvm-env.sh"
+[ -f "$ENV_HELPER" ] || ENV_HELPER=/usr/share/pve-microvm/pve-microvm-env.sh
+source "$ENV_HELPER"
+pve_microvm_env template
+
+
 PROG=$(basename "$0")
 CONF="/etc/pve-microvm/images.conf"
 CONF_DEFAULT="/usr/share/pve-microvm/microvm-images.conf"
-CACHE_DIR="/var/cache/pve-microvm"
+CACHE_DIR="$PVE_MICROVM_CACHE_DIR/oci"
 
 # Defaults (overridden by config or flags)
 IMAGE="debian:trixie-slim"
@@ -319,7 +326,7 @@ log "  Disk:    $DISK_SIZE"
 
 # Work directory
 mkdir -p "$CACHE_DIR"
-WORKDIR=$(mktemp -d "$CACHE_DIR/build.XXXXXX")
+WORKDIR=$(mktemp -d "$PVE_MICROVM_RUN_DIR/template.XXXXXX")
 ROOTFS_DIR=""
 cleanup_build() {
     if [ -n "$ROOTFS_DIR" ]; then
@@ -448,11 +455,11 @@ if echo "$IMAGE" | grep -qi '^gokrazy'; then
     log ""
     log "  1. Install gok: go install github.com/gokrazy/tools/cmd/gok@latest"
     log "  2. Create instance: gok -i virtual new"
-    log "  3. Build image: gok -i virtual overwrite --full /tmp/gokrazy.img"
+    log "  3. Build image: gok -i virtual overwrite --full $PVE_MICROVM_BUILD_DIR/gokrazy.img"
     log "  4. Import to PVE:"
     log "     qm create $TEMPLATE_VMID --machine q35 --memory $MEMORY --cores $CORES \\"
     log "       --net0 virtio,bridge=$BRIDGE --serial0 socket --vga serial0"
-    log "     qm importdisk $TEMPLATE_VMID /tmp/gokrazy.img $STORAGE"
+    log "     qm importdisk $TEMPLATE_VMID $PVE_MICROVM_BUILD_DIR/gokrazy.img $STORAGE"
     log "     qm set $TEMPLATE_VMID --scsi0 $STORAGE:vm-${TEMPLATE_VMID}-disk-0 --boot order=scsi0"
     log "     qm template $TEMPLATE_VMID"
     log ""

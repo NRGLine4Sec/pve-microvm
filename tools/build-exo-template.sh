@@ -17,6 +17,13 @@
 #   - Separate models volume for shared model storage
 set -euo pipefail
 
+# Source-tree and installed tools share the same explicit host mapping.
+ENV_HELPER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/pve-microvm-env.sh"
+[ -f "$ENV_HELPER" ] || ENV_HELPER=/usr/share/pve-microvm/pve-microvm-env.sh
+source "$ENV_HELPER"
+pve_microvm_env exo-template
+
+
 VMID=9020
 STORAGE="local-lvm"
 DISK_SIZE="2G"

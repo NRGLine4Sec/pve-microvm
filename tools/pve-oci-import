@@ -8,6 +8,13 @@
 
 set -euo pipefail
 
+# Source-tree and installed tools share the same explicit host mapping.
+ENV_HELPER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/pve-microvm-env.sh"
+[ -f "$ENV_HELPER" ] || ENV_HELPER=/usr/share/pve-microvm/pve-microvm-env.sh
+source "$ENV_HELPER"
+pve_microvm_env oci-import
+
+
 PROG=$(basename "$0")
 DEFAULT_STORAGE="local-lvm"
 DEFAULT_SIZE="2G"
@@ -74,7 +81,7 @@ for tool in skopeo umoci qemu-img mkfs.ext4; do
 done
 
 # Workspace
-WORKDIR=$(mktemp -d /tmp/pve-oci-import.XXXXXX)
+WORKDIR=$(mktemp -d "$PVE_MICROVM_RUN_DIR/import.XXXXXX")
 trap 'rm -rf "$WORKDIR"' EXIT
 
 OCI_DIR="$WORKDIR/oci"

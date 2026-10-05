@@ -37,6 +37,51 @@ dpkg -i pve-microvm_*.deb
 apt-get install -f
 ```
 
+## Project-owned caches and disposable output (2026-10-05)
+
+The canonical project name is `pve-microvm`. Resolve the root once, before
+changing `TMPDIR`, with the packaged `tools/lib/project-tmp.sh` resolver:
+
+* `PROJECT_TMP_BASE` selects `<base>/pve-microvm`. Compatible
+  `PROJECT_TMP_ROOT` selects the complete root; if both are supplied they must
+  agree. Invalid/relative/empty/conflicting overrides fail. `PVE_MICROVM_TMP_ROOT`
+  is a legacy alias only when the generic root is absent.
+* Snapshot inherited `TMPDIR` once as `PROJECT_ORIGINAL_TMPDIR`. CI chooses
+  `$RUNNER_TEMP/pve-microvm`, then original `$TMPDIR/pve-microvm`, then platform
+  temp, even if a workspace mount exists. Local hosts choose usable
+  `/workspace/tmp/pve-microvm`, then platform temp. On the supported Linux/Bash
+  toolchain system temp is `/tmp/pve-microvm`; there is no bare/home cache root.
+  The resolved root is exported once, so subprocesses keep the same hierarchy.
+  Ownership/symlink checks remain; `/workspace` is the known mount alias.
+* `cache/kernel/` holds Linux tarballs; `cache/{xdg,bun,npm,python}/` holds tool
+  caches. `build/kernel/` holds kernel/initrd outputs; isolated kernel compilation
+  and Debian staging/artifacts live under `build/`. Stable `tests/` and `logs/`
+  directories are available for disposable isolation/output; retained profiles
+  are elsewhere. The helper exports
+  `TMPDIR`/`TMP`/`TEMP` to an existing `runs/<purpose>/run.XXXXXX/tmp/`, plus
+  `XDG_CACHE_HOME`, `BUN_INSTALL_CACHE_DIR`, `npm_config_cache`,
+  `PYTHONPYCACHEPREFIX` and `PYTHONDONTWRITEBYTECODE`.
+* Use `make test`, `make kernel`, `make deb`; direct tools use the same helper.
+  `make deb` builds a copy under `build/deb/run.XXXXXX` rather than writing
+  generated Debian files into source. `PVE_MICROVM_KERNEL_DIR` must be beneath
+  the resolved `build/`; packaging consumes that path.
+* CI explicitly sets `PROJECT_TMP_ROOT=$RUNNER_TEMP/pve-microvm`. The resolver
+  is vendored into the repository/package: CI does not depend on the host's
+  `/workspace/Makefile`. Artifact staging and publisher auth use the same tree.
+* Installed tools have the portable fallback too. No remote host changes are
+  authorised by this policy update; coordinate rollout/path mapping before
+  deploying. Existing jobs, model/data assets and legacy paths are untouched.
+* Guest `/tmp` tmpfs mounts and in-image package paths are guest runtime state,
+  not host build scratch. Do not replace them with workspace paths.
+* Retained profiles and reports use `docs/evidence/path-policy/<run-id>/`, which
+  is ignored by Git and excluded from package staging. `make test` captures
+  Callgrind CPU instructions and Memcheck allocation trees in paired equivalent
+  full-suite passes (Valgrind cannot combine these tools). Both are analysed
+  after a run; instruction counts are not wall-clock latency samples.
+* `make clean CONFIRM_IDLE=yes` removes only the resolved root's `cache`,
+  `build`, `tests`, `logs`, `runs` after jobs stop and reports are preserved. Never migrate/delete
+  another project's files or existing retained evidence without authorisation.
+
 ## Development checks before committing
 
 Run the checks that are meaningful in the current environment:

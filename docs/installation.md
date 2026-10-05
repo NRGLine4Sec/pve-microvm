@@ -16,8 +16,9 @@ apt-get install -f   # resolve any missing dependencies
 ```bash
 git clone https://github.com/rcarmo/pve-microvm.git
 cd pve-microvm
-dpkg-buildpackage -us -uc -b
-dpkg -i ../pve-microvm_*_all.deb
+make deb
+# Use the exact output directory printed by make deb:
+sudo dpkg -i <output-directory>/pve-microvm_*_all.deb
 ```
 
 ## Manual (development)
