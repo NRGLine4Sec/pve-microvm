@@ -1,26 +1,27 @@
-# v0.3.26
+# v0.3.27
 
-WebUI package updates can be interrupted when pve-microvm restarts the daemon
-hosting their terminal. This patch release replaces that full restart with
-Proxmox's graceful `deb-systemd-invoke reload-or-try-restart` action in both
-package configuration and qemu-server trigger hooks. Cached Perl code is still
-refreshed; existing terminal children are preserved on PVE's reload path.
+The shipped Linux 6.12.22 guest kernel now enables Landlock for unprivileged
+filesystem sandboxing ([#21](https://github.com/rcarmo/pve-microvm/issues/21)).
+Landlock is built in and included in the default LSM selection without dropping
+existing LSM entries. The build rejects configurations that lose those settings
+and publishes the effective `kernel-config` alongside the kernel/initrd.
 
-The restart was introduced in v0.3.20. Versions through v0.3.25 can disconnect
-the terminal and terminate the package manager beneath it. The yellow
-`Disconnecting... (Detecting migration...)` message does not establish that a
-VM migrated or that the update completed.
+An unprivileged guest smoke test checks ABI 3+, allowed-directory writes,
+denied outside writes/truncation/rename and inheritance across fork/exec.
+See [Landlock testing and activation](docs/landlock.md).
 
-If an update was interrupted, use SSH to check for an active apt/dpkg process
-before starting another transaction. Once it has stopped, inspect `dpkg --audit`
-and `/var/log/apt/term.log`; finish pending configuration with `dpkg --configure -a`
-if needed, then retry the upgrade over SSH. Do not delete active lock files.
+This release also fixes host temp/cache paths leaking into guest chroot package
+scripts, which could make `mktemp` fail during template creation. Pre-release
+CPU/allocation profiles are now analysed and deleted immediately, leaving only
+concise conclusions; ordinary development tests need not profile every run.
 
-Validation: 88 tests pass. On idle z83ii (PVE manager 9.2.20), the old restart
-terminated a disposable terminal/child in the daemon cgroup. A graceful reload
-preserved both. The fixed Debian candidate installed through that terminal and
-completed both configure and trigger paths without disconnecting it. No real
-system-wide apt upgrade or browser automation was used for these checks.
+Validation: **90 tests pass**. The locally rebuilt kernel passes isolated QEMU/TCG
+boot testing and a normal Debian/PVE guest boot on z83ii: active LSMs are
+`capability,landlock,selinux,bpf`, ABI is **6**, and write/truncate/rename plus
+fork/exec tests pass as UID 65534. Pre-release CPU/allocation analysis retains
+process isolation; raw captures were disposed after use. Release CI repeats the
+profiled suite and booted-kernel enforcement gate before publication.
 
-See [issue #20](https://github.com/rcarmo/pve-microvm/issues/20) and the
-[RCA](docs/rca-issue-20.md) for the process lifecycle, test results and recovery.
+**Existing running guests keep their current kernel until restarted.** Deployment
+updates the host files for future starts and does not reboot workloads. Custom
+kernel paths and explicit `lsm=` overrides need separate attention.

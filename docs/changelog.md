@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.27
+
+* Enable Landlock in the shipped 6.12.22 kernel and select it alongside existing
+  LSMs. Check the effective normalised configuration and include that config in
+  the package/release for inspection ([#21](https://github.com/rcarmo/pve-microvm/issues/21)).
+* Add an unprivileged guest test for ABI 3+, allowed/denied writes, truncation,
+  rename/refer protection and fork/exec inheritance.
+* Reset host-only temporary/cache paths at the guest chroot boundary, fixing
+  package-script `mktemp` failures introduced by project-owned host scratch.
+* Analyse pre-release CPU/allocation profiles, then delete raw captures and
+  disposable logs. Ordinary development tests no longer require profiling.
+
 ## 0.3.26
 
 * Gracefully reload `pvedaemon` after package configuration and qemu-server

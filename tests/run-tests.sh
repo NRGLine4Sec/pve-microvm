@@ -303,6 +303,8 @@ run_test "kernel enables bridge netfilter" assert_file_contains kernel/pve-micro
 
 run_test "project-owned scratch and external mapping" bash tests/test-project-paths.sh
 
+run_test "Landlock effective config and guest test compile" bash tests/test-landlock-build.sh
+
 log "Patch-script safety contracts"
 run_test "patch script has stamp/idempotency guard" assert_file_contains tools/pve-microvm-patch 'patches already applied'
 run_test "patch script delegates config_to_command once per apply path" assert_file_contains tools/pve-microvm-patch 'delegate to microvm command builder'

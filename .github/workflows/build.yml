@@ -20,14 +20,14 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq valgrind
 
       - name: Run tests
-        run: make test
+        run: make test-profile
 
-      - name: Retain test profiles and logs
+      - name: Upload concise test profiling conclusions
         if: always()
         uses: actions/upload-artifact@v5
         with:
-          name: test-profiles
-          path: docs/evidence/path-policy/
+          name: test-conclusions
+          path: docs/profiling/
           retention-days: 14
 
   build-kernel:
@@ -47,7 +47,7 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq \
             build-essential flex bison bc libelf-dev libssl-dev wget \
-            cpio busybox-static
+            cpio busybox-static qemu-system-x86
 
       - name: Cache kernel source
         uses: actions/cache@v5
@@ -61,6 +61,9 @@ jobs:
           ls -lh "$PROJECT_TMP_ROOT/build/kernel/vmlinuz-microvm" "$PROJECT_TMP_ROOT/build/kernel/initrd-microvm"
           file "$PROJECT_TMP_ROOT/build/kernel/vmlinuz-microvm"
 
+      - name: Boot kernel and verify unprivileged Landlock
+        run: bash tests/boot-landlock.sh "$PROJECT_TMP_ROOT/build/kernel/vmlinuz-microvm"
+
       - name: Upload kernel artifacts
         uses: actions/upload-artifact@v5
         with:
@@ -68,6 +71,7 @@ jobs:
           path: |
             ${{ runner.temp }}/pve-microvm/build/kernel/vmlinuz-microvm
             ${{ runner.temp }}/pve-microvm/build/kernel/initrd-microvm
+            ${{ runner.temp }}/pve-microvm/build/kernel/kernel-config
           retention-days: 7
 
   build-deb:
@@ -150,6 +154,7 @@ jobs:
           files: |
             ${{ runner.temp }}/pve-microvm/build/release/vmlinuz-microvm
             ${{ runner.temp }}/pve-microvm/build/release/initrd-microvm
+            ${{ runner.temp }}/pve-microvm/build/release/kernel-config
             ${{ runner.temp }}/pve-microvm/build/release/pve-microvm_*.deb
           body_path: RELEASE_NOTES.md
           draft: false

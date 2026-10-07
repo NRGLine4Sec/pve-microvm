@@ -24,6 +24,11 @@ env -u PROJECT_TMP_BASE -u PVE_MICROVM_TMP_ROOT PROJECT_TMP_ROOT="$fixture/runne
         [[ "$XDG_CACHE_HOME" = "$PVE_MICROVM_TMP_ROOT/cache/xdg" ]]
         [[ "$PVE_MICROVM_BUILD_DIR" = "$PVE_MICROVM_TMP_ROOT/build" ]]
     '
+# Never expose host absolute scratch paths to guest package scripts.
+printf '#!/bin/bash\ntest "$TMPDIR" = /tmp && test "$TMP" = /tmp && test "$TEMP" = /tmp\ntest -z "${PROJECT_TMP_ROOT+x}" && test -z "${PYTHONPYCACHEPREFIX+x}" && test -z "${XDG_CACHE_HOME+x}"\n' > "$fixture/chroot"
+chmod +x "$fixture/chroot"
+PATH="$fixture:$PATH" pve_microvm_chroot ignored-root ignored-command
+
 # Fallback order: CI ignores a usable workspace; local ignores runner temp.
 source "$ROOT/tools/lib/project-tmp.sh"
 unset PROJECT_TMP_ROOT PROJECT_TMP_BASE

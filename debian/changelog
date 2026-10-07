@@ -1,3 +1,13 @@
+pve-microvm (0.3.27-1) trixie; urgency=high
+
+  * Enable built-in Landlock and preserve the existing LSM selection (#21).
+  * Verify final kernel configuration and ship the generated build config.
+  * Add an unprivileged ABI >= 3 and filesystem confinement guest smoke test.
+  * Fix host temporary/cache environment leaking into guest chroot installs.
+  * Dispose pre-release profiling data after analysis; retain concise results.
+
+ -- Rui Carmo <rui.carmo@gmail.com>  Wed, 07 Oct 2026 19:30:00 +0000
+
 pve-microvm (0.3.26-1) trixie; urgency=high
 
   * Fix WebUI upgrade interruption (#20): gracefully reload pvedaemon through

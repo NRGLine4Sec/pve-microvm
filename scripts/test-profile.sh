@@ -1,13 +1,17 @@
 #!/bin/bash
-# Retained CPU/allocation reports are separate from disposable project scratch.
+# Pre-release CPU/allocation captures are deleted immediately after analysis.
 set -euo pipefail
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 source "$ROOT/tools/pve-microvm-env.sh"
 pve_microvm_env tests
 command -v valgrind >/dev/null || { echo 'Install valgrind before running profiled tests' >&2; exit 1; }
 RUN_ID=$(date -u +%Y%m%dT%H%M%SZ)-$$
-REPORT="$ROOT/docs/evidence/path-policy/$RUN_ID"
+REPORT="$PVE_MICROVM_RUN_DIR/profiles/$RUN_ID"
 mkdir -p "$REPORT"
+SUMMARY="$ROOT/docs/profiling/latest.md"
+mkdir -p "$(dirname "$SUMMARY")"
+# Delete complete/probe captures even when a test or annotation fails.
+trap 'rm -rf "$REPORT"' EXIT
 {
     git -C "$ROOT" rev-parse HEAD
     git -C "$ROOT" status --short
@@ -31,9 +35,20 @@ heap_rc=$?
 rc=$((cpu_rc || heap_rc))
 set -e
 printf 'CPU pass: %s; heap pass: %s\n' "$cpu_rc" "$heap_rc" >> "$REPORT/receipt.txt"
-printf 'Retained profiling report: %s\n' "$REPORT"
+printf 'Temporary profiling capture: %s\n' "$REPORT"
 tail -8 "$REPORT/tests.log"
-# Retain every raw capture; annotate only the largest processes. Whole-tree
+# Analyse the largest processes before deleting all raw captures. Whole-tree
 # annotation takes longer than tests and adds no value for tiny helper processes.
 python3 "$ROOT/scripts/analyse-profiles.py" "$REPORT" > "$REPORT/profile-summary.log"
+{
+    printf '# Latest pre-release profiling\n\n'
+    printf 'Workload: full suite; Callgrind instructions and Memcheck cumulative bytes/objects in paired passes.\n'
+    printf 'CPU pass: %s; allocation pass: %s.\n' "$cpu_rc" "$heap_rc"
+    git -C "$ROOT" rev-parse HEAD
+    valgrind --version
+    cat "$REPORT/profile-summary.md"
+    printf '\nAnalysis: interpreter/import startup dominates the mock fixture suite.\n'
+    printf 'No PVE runtime or guest performance claim; CPU is instruction events, not wall time.\n'
+    printf 'Equivalent paired workload; isolation preserved. Raw captures disposed after analysis.\n'
+} > "$SUMMARY"
 exit "$rc"

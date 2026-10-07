@@ -112,6 +112,8 @@ fi
 
 # Resolve dependencies
 make olddefconfig >/dev/null 2>&1
+bash "$SCRIPT_DIR/check-landlock.sh" .config
+cp .config "$KERNEL_DIR/kernel-config"
 
 # Verify critical configs survived olddefconfig
 echo "Verifying critical configs..."
@@ -129,9 +131,9 @@ grep '^CONFIG_VIRTIO' .config
 # Build kernel + modules
 NCPU=$(nproc)
 echo "Building kernel with ${NCPU} CPUs..."
-make -j"$NCPU" bzImage 2>&1 | tail -n 5
+make -j"$NCPU" bzImage 2>&1 | tee "$PVE_MICROVM_RUN_DIR/bzimage.log" | tail -n 5
 echo "Building modules..."
-make -j"$NCPU" modules 2>&1 | tail -n 3
+make -j"$NCPU" modules 2>&1 | tee "$PVE_MICROVM_RUN_DIR/modules.log" | tail -n 3
 
 # Install modules to a temp dir
 MOD_DIR=$(mktemp -d)

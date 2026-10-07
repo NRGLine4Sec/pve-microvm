@@ -1,3 +1,17 @@
+<!-- RUI-PROFILE-LIFECYCLE-20261005 -->
+## Current profiling and cleanup rule — supersedes older text below
+
+Rui's explicit rule: **profile and tune during pre-release tests; remove profiling data immediately after analysis/use.** Ordinary development tests do not require profiling on every run. Targeted diagnostic profiling is optional when useful and follows the same disposal rule.
+
+- During pre-release verification, capture CPU and heap/allocation behaviour, analyse hotspots and tune avoidable allocations/repeated work. Compare equivalent workloads without weakening correctness/security/numerical contracts. For Go, inspect CPU, alloc_space and alloc_objects; coverage alone is not profiling.
+- Keep captures and matching artifacts only while the current analysis needs them. Once used, immediately delete raw profiles, traces, matching test binaries, temporary fixtures and disposable logs, including failed/probe artifacts after diagnosis. Retain only concise conclusions and important measurements/limitations. Do not keep indefinite raw archives or copy them into exports/reports/evidence to evade cleanup.
+- Remove all completed disposable cache/build/test/run data promptly. Never delete files still in use: finish or safely pause the owning job and clean at a safe boundary. Preserve source, installed toolchains, durable datasets/checkpoints and intentional release assets. Minimise disk usage; no random exports or redundant snapshots.
+- This rule overrides **every conflicting older paragraph in this file and linked local guidance**, including “profile every test”, “unprofiled tests prohibited”, “retain all raw evidence”, “never delete profiles” and cleanup exclusions based only on an evidence/profiles directory name. Update helper/CI cleanup behaviour accordingly; do not weaken pre-release analysis.
+- Existing no-agent-contact and execution-pause rules remain unchanged. This policy grants no unsolicited coordination or automatic job restart.
+<!-- /RUI-PROFILE-LIFECYCLE-20261005 -->
+
+
+
 # pve-microvm Agent Notes
 
 These notes capture the working process for developing, testing, and releasing `pve-microvm`. They are intentionally generic: replace hostnames, node IPs, storage names, VMIDs, and template IDs with values from your own Proxmox VE cluster.
@@ -56,8 +70,7 @@ changing `TMPDIR`, with the packaged `tools/lib/project-tmp.sh` resolver:
 * `cache/kernel/` holds Linux tarballs; `cache/{xdg,bun,npm,python}/` holds tool
   caches. `build/kernel/` holds kernel/initrd outputs; isolated kernel compilation
   and Debian staging/artifacts live under `build/`. Stable `tests/` and `logs/`
-  directories are available for disposable isolation/output; retained profiles
-  are elsewhere. The helper exports
+  directories are available for disposable isolation/output; profiling captures are temporary and deleted after analysis. The helper exports
   `TMPDIR`/`TMP`/`TEMP` to an existing `runs/<purpose>/run.XXXXXX/tmp/`, plus
   `XDG_CACHE_HOME`, `BUN_INSTALL_CACHE_DIR`, `npm_config_cache`,
   `PYTHONPYCACHEPREFIX` and `PYTHONDONTWRITEBYTECODE`.
@@ -73,14 +86,14 @@ changing `TMPDIR`, with the packaged `tools/lib/project-tmp.sh` resolver:
   deploying. Existing jobs, model/data assets and legacy paths are untouched.
 * Guest `/tmp` tmpfs mounts and in-image package paths are guest runtime state,
   not host build scratch. Do not replace them with workspace paths.
-* Retained profiles and reports use `docs/evidence/path-policy/<run-id>/`, which
-  is ignored by Git and excluded from package staging. `make test` captures
+* Pre-release profiling scratch uses `runs/tests/<run-id>/profiles/`, which
+  is disposable and separate from source. `make test` captures
   Callgrind CPU instructions and Memcheck allocation trees in paired equivalent
   full-suite passes (Valgrind cannot combine these tools). Both are analysed
-  after a run; instruction counts are not wall-clock latency samples.
+  then deleted after a run; instruction counts are not wall-clock latency samples.
 * `make clean CONFIRM_IDLE=yes` removes only the resolved root's `cache`,
-  `build`, `tests`, `logs`, `runs` after jobs stop and reports are preserved. Never migrate/delete
-  another project's files or existing retained evidence without authorisation.
+  `build`, `tests`, `logs`, `runs` after jobs stop and concise conclusions are recorded. Never migrate/delete
+  another project's files or durable source/data/release assets without authorisation; raw profiles are deleted after use.
 
 ## Development checks before committing
 

@@ -43,6 +43,17 @@ pve_microvm_env() {
 
 }
 
+# Host absolute scratch/cache paths cannot be resolved inside the guest rootfs.
+# Keep chroot-created state in the owned rootfs image, with guest /tmp semantics.
+pve_microvm_chroot() {
+    env -u PROJECT_TMP_BASE -u PROJECT_TMP_ROOT -u PROJECT_ORIGINAL_TMPDIR \
+        -u PVE_MICROVM_TMP_ROOT -u PVE_MICROVM_RUN_DIR -u PVE_MICROVM_CACHE_DIR \
+        -u PVE_MICROVM_BUILD_DIR -u PVE_MICROVM_KERNEL_DIR -u PVE_MICROVM_TEST_DIR \
+        -u PVE_MICROVM_LOG_DIR -u XDG_CACHE_HOME -u BUN_INSTALL_CACHE_DIR \
+        -u npm_config_cache -u PYTHONPYCACHEPREFIX \
+        TMPDIR=/tmp TMP=/tmp TEMP=/tmp chroot "$@"
+}
+
 if [[ "${BASH_SOURCE[0]}" = "$0" ]]; then
     set -euo pipefail
     [[ "${1:-}" = --exec && $# -ge 3 ]] || { echo "Usage: $0 --exec PURPOSE COMMAND [ARG...]" >&2; exit 1; }

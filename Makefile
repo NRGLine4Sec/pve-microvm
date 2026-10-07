@@ -6,7 +6,7 @@ VERSION = 0.1.0
 # PROJECT_TMP_ROOT override it; CI uses runner/original TMPDIR/system temp.
 ENV_HELPER := bash tools/pve-microvm-env.sh --exec
 
-.PHONY: all build install install-internal clean deb kernel test
+.PHONY: test-profile all build install install-internal clean deb kernel test
 
 all: build
 
@@ -14,6 +14,9 @@ build:
 	@echo "Nothing to compile (kernel built separately via CI or kernel/build-kernel.sh)"
 
 test:
+	$(ENV_HELPER) tests bash tests/run-tests.sh
+
+test-profile:
 	$(ENV_HELPER) tests bash scripts/test-profile.sh
 
 kernel:
@@ -49,6 +52,8 @@ install-internal:
 	install -d $(DESTDIR)/usr/share/pve-microvm/kernel
 	install -m 755 kernel/build-kernel.sh $(DESTDIR)/usr/share/pve-microvm/kernel/
 	install -m 644 kernel/base-x86_64-6.1.config $(DESTDIR)/usr/share/pve-microvm/kernel/
+	install -m 644 tests/landlock-smoke.c $(DESTDIR)/usr/share/pve-microvm/kernel/
+	install -m 755 kernel/check-landlock.sh $(DESTDIR)/usr/share/pve-microvm/kernel/
 	install -m 644 kernel/pve-microvm-overlay.config $(DESTDIR)/usr/share/pve-microvm/kernel/
 
 deb:

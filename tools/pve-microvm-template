@@ -757,7 +757,7 @@ APTSRC
 
     # Install packages. Keep package-manager failures visible and fatal; a
     # template without its requested base packages is not usable output.
-    if ! chroot "$ROOTFS_DIR" /bin/bash -c "
+    if ! pve_microvm_chroot "$ROOTFS_DIR" /bin/bash -c "
         set -e
         export DEBIAN_FRONTEND=noninteractive
         apt-get update -qq
@@ -820,14 +820,14 @@ STATICEOF
     # Conditional services -- run as separate chroot commands
     # so we can use shell variables
     if [ "$INSTALL_SSH" -eq 1 ]; then
-        chroot "$ROOTFS_DIR" systemctl enable ssh 2>/dev/null || true
+        pve_microvm_chroot "$ROOTFS_DIR" systemctl enable ssh 2>/dev/null || true
     fi
 
     if [ "$INSTALL_AGENT" -eq 1 ]; then
         configure_systemd_guest_agent "$ROOTFS_DIR"
-        chroot "$ROOTFS_DIR" systemctl disable microvm-agent.service 2>/dev/null || true
-        chroot "$ROOTFS_DIR" systemctl unmask qemu-guest-agent.service 2>/dev/null || true
-        chroot "$ROOTFS_DIR" systemctl enable qemu-guest-agent.service 2>/dev/null || true
+        pve_microvm_chroot "$ROOTFS_DIR" systemctl disable microvm-agent.service 2>/dev/null || true
+        pve_microvm_chroot "$ROOTFS_DIR" systemctl unmask qemu-guest-agent.service 2>/dev/null || true
+        pve_microvm_chroot "$ROOTFS_DIR" systemctl enable qemu-guest-agent.service 2>/dev/null || true
     fi
 
     # Unmount
@@ -848,11 +848,11 @@ elif [ -f "$ROOTFS_DIR/sbin/apk" ] || [ -f "$ROOTFS_DIR/usr/bin/apk" ]; then
     APKPKGS="dhclient socat cloud-init"
     [ "$INSTALL_SSH" -eq 1 ] && APKPKGS="$APKPKGS openssh"
     [ "$INSTALL_AGENT" -eq 1 ] && APKPKGS="$APKPKGS qemu-guest-agent"
-    if ! chroot "$ROOTFS_DIR" /bin/sh -c "set -e; apk update; apk add --no-cache $APKPKGS"; then
+    if ! pve_microvm_chroot "$ROOTFS_DIR" /bin/sh -c "set -e; apk update; apk add --no-cache $APKPKGS"; then
         die "apk package installation failed for $IMAGE"
     fi
 
-    chroot "$ROOTFS_DIR" /bin/sh -c '
+    pve_microvm_chroot "$ROOTFS_DIR" /bin/sh -c '
         # Enable services via OpenRC
         if command -v rc-update >/dev/null 2>&1; then
             rc-update add networking default 2>/dev/null || true
@@ -863,10 +863,10 @@ elif [ -f "$ROOTFS_DIR/sbin/apk" ] || [ -f "$ROOTFS_DIR/usr/bin/apk" ]; then
     ' 2>&1 || log "warning: chroot package install had errors"
 
     if [ "$INSTALL_SSH" -eq 1 ]; then
-        chroot "$ROOTFS_DIR" rc-update add sshd default 2>/dev/null || true
+        pve_microvm_chroot "$ROOTFS_DIR" rc-update add sshd default 2>/dev/null || true
     fi
     if [ "$INSTALL_AGENT" -eq 1 ]; then
-        chroot "$ROOTFS_DIR" rc-update add qemu-guest-agent default 2>/dev/null || true
+        pve_microvm_chroot "$ROOTFS_DIR" rc-update add qemu-guest-agent default 2>/dev/null || true
     fi
 
     umount "$ROOTFS_DIR/dev" 2>/dev/null || true
@@ -904,12 +904,12 @@ elif [ -f "$ROOTFS_DIR/usr/bin/dnf" ] || [ -f "$ROOTFS_DIR/usr/bin/microdnf" ] |
 
     # Package installation is part of template correctness. Do not suppress a
     # failed transaction and publish a bare, superficially successful rootfs.
-    if ! chroot "$ROOTFS_DIR" /bin/bash -c "$PKG_CMD install -y $DNFPKGS"; then
+    if ! pve_microvm_chroot "$ROOTFS_DIR" /bin/bash -c "$PKG_CMD install -y $DNFPKGS"; then
         die "$PKG_CMD package installation failed for $IMAGE"
     fi
 
     if [ "$IS_ENTERPRISE_LINUX" -eq 1 ]; then
-        chroot "$ROOTFS_DIR" /bin/bash -c '
+        pve_microvm_chroot "$ROOTFS_DIR" /bin/bash -c '
             systemctl enable NetworkManager.service 2>/dev/null || true
             systemctl enable cloud-init.service 2>/dev/null || true
             rm -f /etc/systemd/system/microvm-dhcp.service
@@ -930,7 +930,7 @@ NMEOF
             chmod 600 /etc/NetworkManager/system-connections/microvm-dhcp.nmconnection
         '
     else
-        chroot "$ROOTFS_DIR" /bin/bash -c '
+        pve_microvm_chroot "$ROOTFS_DIR" /bin/bash -c '
             systemctl enable systemd-networkd.service 2>/dev/null || true
             systemctl enable cloud-init.service 2>/dev/null || true
 
@@ -956,7 +956,7 @@ DHCPEOF
         '
     fi
 
-    chroot "$ROOTFS_DIR" /bin/bash -c "
+    pve_microvm_chroot "$ROOTFS_DIR" /bin/bash -c "
         # Serial console
         systemctl disable serial-getty@ttyS0.service 2>/dev/null || true
         printf '[Unit]\\nDescription=microvm serial console\\nAfter=systemd-user-sessions.service\\n\\n[Service]\\nExecStart=-/sbin/agetty --autologin root --noclear ttyS0 linux\\nRestart=always\\nRestartSec=0\\nType=idle\\n\\n[Install]\\nWantedBy=multi-user.target\\n' > /etc/systemd/system/microvm-console.service
@@ -970,13 +970,13 @@ DHCPEOF
     "
 
     if [ "$INSTALL_SSH" -eq 1 ]; then
-        chroot "$ROOTFS_DIR" systemctl enable sshd 2>/dev/null || true
+        pve_microvm_chroot "$ROOTFS_DIR" systemctl enable sshd 2>/dev/null || true
     fi
     if [ "$INSTALL_AGENT" -eq 1 ]; then
         configure_systemd_guest_agent "$ROOTFS_DIR"
-        chroot "$ROOTFS_DIR" systemctl disable microvm-agent.service 2>/dev/null || true
-        chroot "$ROOTFS_DIR" systemctl unmask qemu-guest-agent.service 2>/dev/null || true
-        chroot "$ROOTFS_DIR" systemctl enable qemu-guest-agent.service 2>/dev/null || true
+        pve_microvm_chroot "$ROOTFS_DIR" systemctl disable microvm-agent.service 2>/dev/null || true
+        pve_microvm_chroot "$ROOTFS_DIR" systemctl unmask qemu-guest-agent.service 2>/dev/null || true
+        pve_microvm_chroot "$ROOTFS_DIR" systemctl enable qemu-guest-agent.service 2>/dev/null || true
     fi
 
     umount "$ROOTFS_DIR/dev" 2>/dev/null || true

@@ -60,7 +60,7 @@ pve-microvm/
 make deb
 
 # Build kernel + initrd
-cd kernel && ./build-kernel.sh
+make kernel
 
 # Full release (done by CI on tag push)
 git tag -a v0.X.Y -m "..." && git push origin v0.X.Y

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Summarise retained Valgrind CPU/allocation captures, not a performance gate."""
+"""Summarise temporary Valgrind CPU/allocation captures, not a performance gate."""
 from pathlib import Path
 import subprocess
 import sys
@@ -27,7 +27,7 @@ for kind, rows in (('CPU instructions', cpu), ('Allocated bytes/objects', heap))
     out += [f'\n## Largest {kind.lower()} processes\n']
     for score, counts, cmd, path in sorted(rows, key=lambda row: row[0], reverse=True)[:6]:
         value = str(score) if kind.startswith('CPU') else f'{score} / {counts[3]}'
-        out.append(f'* {value}: `{path.name}` {cmd[:140]}\n')
+        out.append(f'* {value}: {cmd[:140]}\n')
         target = Path(str(path) + '.top.txt')
         if not target.exists() or not target.stat().st_size:
             with target.open('w') as stream:

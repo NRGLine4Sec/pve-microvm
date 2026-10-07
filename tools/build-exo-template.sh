@@ -69,7 +69,7 @@ mount --bind /sys "$R/sys"
 mount --bind /dev "$R/dev"
 cp /etc/resolv.conf "$R/etc/resolv.conf"
 
-chroot "$R" bash -c '
+pve_microvm_chroot "$R" bash -c '
 set -e
 export DEBIAN_FRONTEND=noninteractive
 

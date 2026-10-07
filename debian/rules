@@ -46,6 +46,9 @@ override_dh_auto_install:
 	install -d $(CURDIR)/debian/pve-microvm/usr/share/pve-microvm/kernel
 	install -m 755 kernel/build-kernel.sh $(CURDIR)/debian/pve-microvm/usr/share/pve-microvm/kernel/
 	install -m 644 kernel/base-x86_64-6.1.config $(CURDIR)/debian/pve-microvm/usr/share/pve-microvm/kernel/
+	install -m 644 tests/landlock-smoke.c debian/pve-microvm/usr/share/pve-microvm/kernel/
+	install -m 755 kernel/check-landlock.sh debian/pve-microvm/usr/share/pve-microvm/kernel/
+	if [ -f "$(PVE_MICROVM_KERNEL_DIR)/kernel-config" ]; then install -m 644 "$(PVE_MICROVM_KERNEL_DIR)/kernel-config" debian/pve-microvm/usr/share/pve-microvm/kernel/build.config; fi
 	install -m 644 kernel/pve-microvm-overlay.config $(CURDIR)/debian/pve-microvm/usr/share/pve-microvm/kernel/
 
 	# Install UI customization files
