@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.28
+
+* Enable EROFS and built-in LZ4, DEFLATE and ZSTD decompression for container
+  images used by AgentsInTheCloud. Validate the generated configuration.
+* Extend the isolated boot gate with plain and LZ4-compressed image mounts,
+  data reads and read-only enforcement; retain Landlock ABI/confinement tests.
+
 ## 0.3.27
 
 * Enable Landlock in the shipped 6.12.22 kernel and select it alongside existing

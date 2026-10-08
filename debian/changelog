@@ -1,3 +1,13 @@
+pve-microvm (0.3.28-1) trixie; urgency=medium
+
+  * Enable built-in EROFS with LZ4, DEFLATE and ZSTD decompression for
+    AgentsInTheCloud's container image backing store.
+  * Enforce EROFS/decompressor settings after kernel config normalisation.
+  * Boot-test plain and LZ4-compressed EROFS mounting, reads and read-only
+    protection alongside the existing unprivileged Landlock checks.
+
+ -- Rui Carmo <rui.carmo@gmail.com>  Thu, 08 Oct 2026 21:30:00 +0000
+
 pve-microvm (0.3.27-1) trixie; urgency=high
 
   * Enable built-in Landlock and preserve the existing LSM selection (#21).

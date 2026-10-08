@@ -20,4 +20,9 @@ for lsm in selinux bpf; do
     if bash "$ROOT/kernel/check-landlock.sh" "$work/bad"; then exit 1; fi
 done
 cc -O2 -Wall -Wextra -Werror "$ROOT/tests/landlock-smoke.c" -o "$work/landlock-smoke"
+bash "$ROOT/kernel/check-erofs.sh" "$work/config"
+for option in CONFIG_EROFS_FS CONFIG_EROFS_FS_ZIP CONFIG_LZ4_DECOMPRESS CONFIG_EROFS_FS_ZIP_DEFLATE CONFIG_EROFS_FS_ZIP_ZSTD; do
+    grep -vFx "$option=y" "$work/config" > "$work/bad"
+    if bash "$ROOT/kernel/check-erofs.sh" "$work/bad"; then exit 1; fi
+done
 echo 'Landlock build guards and smoke-test compilation passed (guest runtime tested separately)'

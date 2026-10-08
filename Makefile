@@ -54,6 +54,7 @@ install-internal:
 	install -m 644 kernel/base-x86_64-6.1.config $(DESTDIR)/usr/share/pve-microvm/kernel/
 	install -m 644 tests/landlock-smoke.c $(DESTDIR)/usr/share/pve-microvm/kernel/
 	install -m 755 kernel/check-landlock.sh $(DESTDIR)/usr/share/pve-microvm/kernel/
+	install -m 755 kernel/check-erofs.sh $(DESTDIR)/usr/share/pve-microvm/kernel/
 	install -m 644 kernel/pve-microvm-overlay.config $(DESTDIR)/usr/share/pve-microvm/kernel/
 
 deb:
