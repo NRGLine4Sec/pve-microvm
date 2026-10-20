@@ -120,6 +120,7 @@ Full cluster: 4 nodes — see [Cluster Hardware](docs/cluster-hardware.md).
 - **[Networking & Storage](docs/networking.md)** — virtiofs, 9p, vsock, SSH agent
 - **[Web UI](docs/webui.md)** — Create µVM dialog, console, icons, panel hiding
 - **[Configuration](docs/configuration.md)** — supported/unsupported options
+- **[Docker](docs/docker.md)** — kernel requirements, AppArmor/SELinux selection, verification
 - **[Architecture](docs/architecture.md)** — how it works, QEMU command line
 - **[Firecracker Compatibility](docs/firecracker.md)** — importing rootfs images
 - **[High Availability](docs/ha.md)** — migration, HA relocate

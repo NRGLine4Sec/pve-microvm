@@ -1,16 +1,30 @@
 # Docker in microVM guests
 
-Docker can run without AppArmor or SELinux. It needs kernel features such as
-namespaces, cgroups, OverlayFS, virtual Ethernet devices and firewall support.
-AppArmor and SELinux add security controls. Removing an active control can let
-containers run with less protection.
+Docker does not require AppArmor or SELinux to run. It needs kernel features
+such as namespaces, cgroups, OverlayFS, virtual Ethernet devices and firewall
+support. AppArmor and SELinux restrict what container processes can access.
+A running container does not prove that either control is active.
+
+## Which security control to use
+
+Use **AppArmor for the standard Debian/Ubuntu guest setup**. Docker normally
+applies its `docker-default` profile when the guest kernel supports AppArmor
+and the guest has the required userspace tools.
+
+SELinux is an alternative, commonly used on Fedora/RHEL. It needs SELinux
+enabled in the guest, container policy packages, correct file labels and Docker
+configuration. Compiling SELinux into the kernel alone does not provide that
+setup.
+
+Preserve the control that a workload already uses. A kernel change must not
+silently remove AppArmor or SELinux protection. Docker's seccomp filter is a
+separate control that restricts system calls; it does not replace either one.
 
 ## AppArmor from v0.4.1
 
-The shipped Linux 6.12.113 kernel includes AppArmor and selects it by default.
-Docker on Debian/Ubuntu can then apply its `docker-default` profile. The guest
-also needs AppArmor userspace tools, including `apparmor_parser`. Install them
-before starting containers:
+The v0.4.1 configuration for Linux 6.12.113 builds in AppArmor and selects it by
+default. The guest also needs AppArmor userspace tools, including
+`apparmor_parser`. Install them before starting containers:
 
 ```sh
 sudo apt install apparmor apparmor-utils
@@ -31,10 +45,18 @@ docker info --format '{{json .SecurityOptions}}'
 docker inspect --format '{{.AppArmorProfile}}' <container>
 ```
 
-A container using the default AppArmor profile should report `docker-default`.
-A container with `apparmor=unconfined` does not use that protection. A privileged
-container can also bypass normal Docker isolation; it needs a separate security
-assessment.
+The active LSM list should include `apparmor`, and Docker's security options
+should include `name=apparmor`. A container using the default profile should
+report `docker-default` in `docker inspect`. Check the active label as well:
+
+```sh
+docker exec <container> cat /proc/self/attr/current
+```
+
+For an image with `cat` installed, the expected label is
+`docker-default (enforce)`. A container with `apparmor=unconfined` does not use
+that protection. A privileged container can also bypass normal Docker isolation;
+it needs a separate security assessment.
 
 ## Guest networking
 
@@ -72,3 +94,5 @@ Installing the host package updates the shipped kernel/initrd for future starts.
 Running guests keep their current kernel until restarted. Custom kernel paths
 are not changed automatically. Preserve any required security settings and test
 workloads before switching a guest from a custom kernel.
+
+[Docker AppArmor documentation](https://docs.docker.com/engine/security/apparmor/)
