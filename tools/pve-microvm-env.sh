@@ -34,8 +34,8 @@ pve_microvm_env() {
     # Create before export: traced subprocesses use TMPDIR at process startup.
     for path in "$temp_path" "$root/cache/xdg" "$root/cache/bun" "$root/cache/npm" "$root/cache/python"; do
         project_path_usable "$path" || { echo "Unsafe child path: $path" >&2; return 1; }
-        mkdir -p "$path"
     done
+    mkdir -p "$temp_path" "$root/cache/xdg" "$root/cache/bun" "$root/cache/npm" "$root/cache/python"
     export TMPDIR="$temp_path" TMP="$temp_path" TEMP="$temp_path"
     export XDG_CACHE_HOME="$root/cache/xdg" BUN_INSTALL_CACHE_DIR="$root/cache/bun"
     export npm_config_cache="$root/cache/npm" PYTHONPYCACHEPREFIX="$root/cache/python"

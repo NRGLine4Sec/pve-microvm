@@ -1,13 +1,14 @@
 # Changelog
 
-## Unreleased
+## 0.4.0
 
-* Enable built-in IPv4/IPv6 policy routing, packet/connection marks and IPv6
-  mangle support. Validate the normalised config and boot-test actual TUN
-  fwmark routing plus legacy iptables/ip6tables MARK/CONNMARK counters (#23).
-* Update the candidate kernel to 6.12.113 within the existing long-term series.
-  Centralise the version and CI cache key in `kernel/version`; document build
-  inputs and validation boundaries in [policy-routing.md](policy-routing.md).
+* Fix IPv4/IPv6 TUN policy routing and packet/connection marks (#23). Check the
+  final kernel config and test real marked packets and firewall counters.
+* Update the guest kernel from 6.12.22 to 6.12.113 in the same long-term series.
+  Use `kernel/version` for the builder and CI source-cache key. See
+  [configuration and tests](policy-routing.md).
+* Create validated temporary/cache directories with one command. The measured
+  helper workload uses 14.4% fewer instructions; path-isolation tests still pass.
 
 ## 0.3.29
 

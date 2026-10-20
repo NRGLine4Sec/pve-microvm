@@ -1,3 +1,16 @@
+pve-microvm (0.4.0-1) trixie; urgency=high
+
+  * Fix TUN policy routing and marks (#23): require built-in IPv4/IPv6
+    routing tables, connection marks and xtables MARK/CONNMARK.
+  * Upgrade the shipped long-term guest kernel from 6.12.22 to 6.12.113.
+  * Boot-test real IPv4/IPv6 fwmark TUN delivery and MARK/CONNMARK counters,
+    retaining Landlock and EROFS enforcement checks.
+  * Set the kernel version and CI source-cache key from kernel/version;
+    correct documentation for the active build inputs.
+  * Batch temporary/cache directory creation after validating all paths.
+
+ -- Rui Carmo <rui.carmo@gmail.com>  Tue, 20 Oct 2026 18:00:00 +0000
+
 pve-microvm (0.3.29-1) trixie; urgency=high
 
   * Fix live full cloning of microVMs (#22): keep unversioned microvm on the

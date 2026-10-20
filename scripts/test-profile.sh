@@ -42,13 +42,14 @@ tail -8 "$REPORT/tests.log"
 python3 "$ROOT/scripts/analyse-profiles.py" "$REPORT" > "$REPORT/profile-summary.log"
 {
     printf '# Latest pre-release profiling\n\n'
-    printf 'Workload: full suite; Callgrind instructions and Memcheck cumulative bytes/objects in paired passes.\n'
-    printf 'CPU pass: %s; allocation pass: %s.\n' "$cpu_rc" "$heap_rc"
-    git -C "$ROOT" rev-parse HEAD
-    valgrind --version
+    printf 'Workload: full local regression suite, run once for each profile type.\n\n'
+    printf 'Exit codes: CPU run %s; allocation run %s (zero means success).\n\n' "$cpu_rc" "$heap_rc"
+    printf 'Source revision: `%s`.\n\n' "$(git -C "$ROOT" rev-parse HEAD)"
+    printf 'Tool version: `%s`.\n\n' "$(valgrind --version)"
     cat "$REPORT/profile-summary.md"
-    printf '\nAnalysis: interpreter/import startup dominates the mock fixture suite.\n'
-    printf 'No PVE runtime or guest performance claim; CPU is instruction events, not wall time.\n'
-    printf 'Equivalent paired workload; isolation preserved. Raw captures disposed after analysis.\n'
+    printf '\n## Analysis\n\n'
+    printf 'Python startup and imports use most of the measured work in the mock tests.\n'
+    printf 'The tests do not measure PVE runtime or guest performance. Each test keeps its\n'
+    printf 'process isolation. Raw profiles and temporary files are deleted after analysis.\n'
 } > "$SUMMARY"
 exit "$rc"

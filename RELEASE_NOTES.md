@@ -1,26 +1,31 @@
-# v0.3.29
+# v0.4.0
 
-Full clones from a running microVM could fail before disk mirroring because PVE
-passed the unversioned `microvm` machine name into its machine-version parser.
-This release fixes [#22](https://github.com/rcarmo/pve-microvm/issues/22) with an
-exact-machine guard in `PVE::QemuServer::BlockJob::mirror`.
+This release updates the guest kernel from **Linux 6.12.22 to 6.12.113** within
+the same long-term support series. It also fixes missing policy-routing and
+firewall-mark support reported in [#23][issue].
 
-The microVM command builder uses `-drive`, so exact `microvm` uses the existing
-`qemu_drive_mirror` branch. Conventional machines keep their previous version
-check and drive/blockdev selection. No arbitrary unversioned machine is accepted
-and no global machine-version parser behaviour is changed.
+A guest could create a TUN interface but fail to add IPv6 routing rules or use
+packet and connection marks. The kernel now includes these features as built-in
+code. The build checks the final configuration and fails if a required feature
+is missing or available only as a module.
 
-`BlockJob.pm` participates in patch preflight, idempotency, replacement triggers
-and independently verified rollback originals. Unsupported layouts fail before
-upstream files are edited. Legacy installations still refuse rollback if their
-historical Machine/QemuServer backups lack verified provenance.
+The boot test sends marked IPv4 and IPv6 UDP packets through selected TUN routes.
+It also checks packet counters for legacy iptables/ip6tables `MARK` and
+`CONNMARK` operations. The same test checks EROFS mounts and unprivileged
+Landlock restrictions. The previous kernel fails the IPv6 routing-rule test;
+the updated kernel passes. These tests do not cover an authenticated Tailscale
+connection, DNS, access-control rules or all nftables backends.
 
-Validation: **91 tests pass**, including mirror dispatch, layout rejection,
-fresh/legacy upgrades, repeated apply, upstream file replacement and rollback.
-An isolated running microVM reproduced the version-check failure.
-After candidate installation its full clone completed, the source stayed running
-and responsive, and the destination booted with the expected on-disk marker.
-Both disposable VMs were removed; existing workloads were not rebooted.
+`kernel/version` now sets the default kernel version and the CI source-cache
+key. The release includes the final `kernel-config` file. Build documentation
+now describes the active configuration inputs. The path helper also creates
+its temporary and cache directories with one command after validating each path.
 
-The guest kernel is unchanged from v0.3.28. Package hooks gracefully refresh
-pvedaemon so new clone requests see the fix without a host or guest reboot.
+**Running guests keep their current kernel until restarted.** Package installation
+updates files for future starts and does not reboot guests. Guests that use a
+custom kernel path need a separate path update.
+
+See [configuration, tests and the kernel update decision][routing].
+
+[issue]: https://github.com/rcarmo/pve-microvm/issues/23
+[routing]: docs/policy-routing.md

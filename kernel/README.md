@@ -1,47 +1,47 @@
 # pve-microvm guest kernel
 
-`kernel/version` selects the default Linux release for `make kernel` and the
-release CI source-cache key. The current development candidate is **6.12.113**,
-an update within the existing 6.12 long-term series.
+`kernel/version` selects the default kernel for `make kernel` and the release
+CI source-cache key. Version 0.4.0 uses **Linux 6.12.113** from the 6.12 long-term
+support series.
 
 ## Build inputs and outputs
 
-The builder runs x86_64 `defconfig`, merges `pve-microvm-6.12.config`, merges
-`pve-microvm-overlay.config`, then runs `olddefconfig`. The retained Firecracker
-`base-x86_64-6.1.config` is a reference only. Editing it does not change the shipped
-kernel. The effective generated config, rather than an input fragment alone,
-determines available features.
+The builder starts with x86_64 `defconfig`. It merges
+`pve-microvm-6.12.config` and `pve-microvm-overlay.config`, then runs
+`olddefconfig` to resolve dependencies. The retained Firecracker
+`base-x86_64-6.1.config` is a reference. Editing it does not change the shipped
+kernel.
 
-After normalisation, the build verifies required virtio/networking settings and
-runs `check-landlock.sh`, `check-erofs.sh` and `check-network.sh`. Required network
-primitives must be built in: the shipped initrd does not include arbitrary
-networking modules. The generated `kernel-config` accompanies release artifacts
-and is packaged as `/usr/share/pve-microvm/kernel/build.config`.
+The build checks the final config for required virtio and networking features.
+It also runs `check-landlock.sh`, `check-erofs.sh` and `check-network.sh`.
+Required network features must be built in because the shipped initrd does not
+include arbitrary networking modules. The release includes `kernel-config`;
+the package installs it as `/usr/share/pve-microvm/kernel/build.config`.
 
-Host downloads, compilation and temporary files use the project-owned scratch
-resolver. By default on a local workspace, outputs are under
-`/workspace/tmp/pve-microvm/build/kernel/`; CI and explicit overrides use the same
-project hierarchy. See [development instructions](../docs/development.md).
+Downloads, build files and temporary files use the project scratch directory.
+The default local output directory is
+`/workspace/tmp/pve-microvm/build/kernel/`. CI and explicit overrides use the
+same directory layout. See [development instructions][development].
 
-## Supported boot path and checks
+## Boot checks
 
-The normal guest boots with the shipped kernel **and initrd**. PVE's microVM
-builder uses PCIe non-transitional virtio devices for Linux guests. The initrd
-mounts the guest root filesystem and hands control to its init process.
+A normal guest boots with the shipped kernel and initrd. For Linux guests, the
+PVE command builder uses PCIe non-transitional virtio devices. The initrd mounts
+the guest root filesystem and starts its init process.
 
-Release CI boots the built kernel under isolated QEMU/TCG without disks or
-network connections and checks:
+Release CI boots the kernel with QEMU software CPU emulation (TCG). The test has
+no attached disks or network connections. Inside the guest, it checks:
 
-* IPv4/IPv6 TUN policy rules and packet delivery selected by fwmark; real legacy
-  iptables/ip6tables MARK and CONNMARK save/restore/match counters.
-* Plain and LZ4-compressed EROFS mounting, data reads and read-only enforcement.
-* Active Landlock selection, ABI 3+ and unprivileged write/truncate/rename
-  confinement with fork/exec inheritance.
+* IPv4/IPv6 TUN routing selected by packet marks. Real packets must also increase
+  legacy iptables/ip6tables `MARK` and `CONNMARK` save/restore/match counters.
+* Plain and LZ4-compressed EROFS mounts, data reads and rejected writes.
+* Active Landlock, ABI 3 or later, and unprivileged filesystem restrictions that
+  survive fork and exec.
 
-The tests do not establish full Tailscale connectivity, every filesystem codec,
-or every supported guest distribution. Kernel upgrades also need a normal
-PVE-guest canary before wider rollout. Running guests keep their existing kernel
-until restarted; installation does not reboot them.
+The tests do not cover full Tailscale connectivity, all filesystem codecs or all
+guest distributions. Deployment needs a normal PVE-guest test before wider
+rollout. Running guests keep their kernel until restarted. Package installation
+does not restart them.
 
 ## Building
 
@@ -52,21 +52,24 @@ sudo apt install build-essential flex bison libelf-dev bc libssl-dev wget cpio b
 make kernel
 ```
 
-To test a different release while keeping outputs under project scratch:
+To select another version, run the builder through the project environment
+helper. Outputs stay under project scratch:
 
 ```sh
 bash tools/pve-microvm-env.sh --exec kernel bash kernel/build-kernel.sh --version 6.12.113
 ```
 
-For the isolated boot gate, install `qemu-system-x86 erofs-utils iproute2 iptables`
+For the isolated boot test, install `qemu-system-x86 erofs-utils iproute2 iptables`
 and run:
 
 ```sh
 bash tests/boot-landlock.sh /path/to/project/build/kernel/vmlinuz-microvm
 ```
 
-Use `make deb` to package the staged kernel and initrd. Publish and validate an
-intentional release through the project release workflow; do not replace kernel
-files on managed hosts as part of ordinary local testing.
+Use `make deb` to package the built kernel and initrd. Use the release workflow
+to publish a release. Local testing must not replace files on managed hosts.
 
-[Policy-routing implementation and upgrade assessment](../docs/policy-routing.md).
+[Policy-routing tests and kernel update decision][routing]
+
+[development]: ../docs/development.md
+[routing]: ../docs/policy-routing.md
