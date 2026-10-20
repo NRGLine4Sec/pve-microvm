@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.1
+
+* Enable AppArmor for Docker's `docker-default` profile. Select AppArmor before
+  SELinux in the LSM list; Landlock and BPF stay active. SELinux remains built
+  in and can be selected with a boot-time `lsm=` override.
+* Check AppArmor build settings and boot-test actual enforcing-profile writes.
+* Limit standard template network rules to guest uplinks, excluding Docker
+  veth and bridge devices. Include udev to initialise network devices.
+
 ## 0.4.0
 
 * Fix IPv4/IPv6 TUN policy routing and packet/connection marks (#23). Check the

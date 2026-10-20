@@ -1,31 +1,28 @@
-# v0.4.0
+# v0.4.1
 
-This release updates the guest kernel from **Linux 6.12.22 to 6.12.113** within
-the same long-term support series. It also fixes missing policy-routing and
-firewall-mark support reported in [#23][issue].
+The Linux 6.12.113 guest kernel now includes **AppArmor** for Docker's
+`docker-default` profile. A build check requires AppArmor, securityfs and audit
+support and verifies the default LSM selection. The boot test loads an enforcing
+profile, allows a write to one file and requires a denied write to fail.
 
-A guest could create a TUN interface but fail to add IPv6 routing rules or use
-packet and connection marks. The kernel now includes these features as built-in
-code. The build checks the final configuration and fails if a required feature
-is missing or available only as a module.
+**AppArmor is now the default major LSM.** Linux 6.12 treats AppArmor and SELinux
+as exclusive major LSMs. AppArmor is listed first; Landlock and BPF stay active.
+SELinux remains compiled in for an explicit `lsm=` boot choice. Workloads that
+require SELinux must select and validate that choice before restarting.
 
-The boot test sends marked IPv4 and IPv6 UDP packets through selected TUN routes.
-It also checks packet counters for legacy iptables/ip6tables `MARK` and
-`CONNMARK` operations. The same test checks EROFS mounts and unprivileged
-Landlock restrictions. The previous kernel fails the IPv6 routing-rule test;
-the updated kernel passes. These tests do not cover an authenticated Tailscale
-connection, DNS, access-control rules or all nftables backends.
+Standard templates now include udev and match only guest uplinks (`eth*` and
+`en*`) in their network rules. The old all-Ethernet match could configure Docker
+veth devices and detach them from the Docker bridge, breaking container access.
+Existing guest network files are not rewritten by host package installation.
 
-`kernel/version` now sets the default kernel version and the CI source-cache
-key. The release includes the final `kernel-config` file. Build documentation
-now describes the active configuration inputs. The path helper also creates
-its temporary and cache directories with one command after validating each path.
+The local suite passes **95/95**. The isolated boot test loads an enforcing
+AppArmor profile and checks allowed and denied writes. Existing routing/mark,
+EROFS and Landlock tests still pass. A disposable Debian guest also passes Docker
+container, bridge/DNS/HTTPS, published-port and persistent-volume restart tests.
+The container uses `docker-default (enforce)`; a mount permitted by an
+unconfined control is denied under that profile. See [Docker setup and test
+limits](docs/docker.md).
 
-**Running guests keep their current kernel until restarted.** Package installation
-updates files for future starts and does not reboot guests. Guests that use a
-custom kernel path need a separate path update.
-
-See [configuration, tests and the kernel update decision][routing].
-
-[issue]: https://github.com/rcarmo/pve-microvm/issues/23
-[routing]: docs/policy-routing.md
+**Running guests keep their kernel until restarted.** Package installation does
+not restart guests or change custom kernel paths. Preserve any required security
+settings when moving a guest from a custom kernel.

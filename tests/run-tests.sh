@@ -311,6 +311,10 @@ run_test "Dual-stack policy routing and marks build contract" bash tests/test-ne
 
 run_test "Public profile summaries omit host details" python3 tests/test-profile-summary.py
 
+run_test "AppArmor effective config and enforcement compile" bash tests/test-apparmor-build.sh
+
+run_test "Guest DHCP excludes Docker veth and bridge interfaces" bash -c 'grep -q "Name=eth\* en\*" tools/pve-microvm-template && ! grep -q "Type=ether" tools/pve-microvm-template && grep -q "PKGS=.*udev" tools/pve-microvm-template'
+
 log "Patch-script safety contracts"
 run_test "patch script has stamp/idempotency guard" assert_file_contains tools/pve-microvm-patch 'patches already applied'
 run_test "patch script delegates config_to_command once per apply path" assert_file_contains tools/pve-microvm-patch 'delegate to microvm command builder'

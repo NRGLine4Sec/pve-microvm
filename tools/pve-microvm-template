@@ -750,7 +750,7 @@ APTSRC
     fi
 
     # Build package list based on profile flags
-    PKGS="iproute2 isc-dhcp-client systemd systemd-sysv ca-certificates curl dbus"
+    PKGS="iproute2 isc-dhcp-client systemd systemd-sysv ca-certificates curl dbus udev"
     [ "$INSTALL_SSH" -eq 1 ] && PKGS="$PKGS openssh-server"
     [ "$INSTALL_AGENT" -eq 1 ] && PKGS="$PKGS qemu-guest-agent"
     log "Packages: $PKGS"
@@ -768,13 +768,12 @@ APTSRC
         systemctl enable systemd-networkd 2>/dev/null || true
         systemctl enable systemd-resolved 2>/dev/null || true
 
-        # Network config: DHCP on all ethernet interfaces by default
-        # Uses Type=ether match — works regardless of interface name or MAC
-        # PVE generates new MACs on clone; this config survives that
+        # Match guest uplinks by name, never container veth/bridge interfaces.
+        # Both kernel eth* and udev en* names survive cloned MAC changes.
         mkdir -p /etc/systemd/network
         cat > /etc/systemd/network/20-microvm-dhcp.network << 'NETEOF'
 [Match]
-Type=ether
+Name=eth* en*
 
 [Network]
 DHCP=yes
@@ -795,7 +794,7 @@ ConditionPathExists=/etc/microvm-static-net
 
 [Service]
 Type=oneshot
-ExecStart=/bin/sh -c '. /etc/microvm-static-net && mkdir -p /etc/systemd/network && printf "[Match]\nType=ether\n\n[Network]\nDHCP=no\nAddress=$$ADDRESS\nGateway=$$GATEWAY\nDNS=$${DNS:-1.1.1.1}\n" > /etc/systemd/network/10-static.network && rm -f /etc/systemd/network/20-microvm-dhcp.network'
+ExecStart=/bin/sh -c '. /etc/microvm-static-net && mkdir -p /etc/systemd/network && printf "[Match]\nName=eth* en*\n\n[Network]\nDHCP=no\nAddress=$$ADDRESS\nGateway=$$GATEWAY\nDNS=$${DNS:-1.1.1.1}\n" > /etc/systemd/network/10-static.network && rm -f /etc/systemd/network/20-microvm-dhcp.network'
 
 [Install]
 WantedBy=sysinit.target

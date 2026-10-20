@@ -3,7 +3,8 @@
 Version 0.3.27 enables built-in Landlock in the shipped Linux 6.12.22 kernel.
 Applications can query its ABI and apply unprivileged filesystem restrictions.
 Landlock must also be selected at boot; the default LSM list includes it and
-preserves SELinux, BPF and other default entries. Only compiled-in LSMs activate.
+keeps other supported entries available. From 0.4.1, AppArmor is the default
+major LSM; see the selection note below. Only compiled-in LSMs activate.
 An explicit guest `lsm=` command-line override can still disable it.
 
 The build runs `kernel/check-landlock.sh` after config merging and `olddefconfig`.
@@ -57,3 +58,10 @@ The test handles only the required write-related rights. It intentionally allows
 reads and execution, so it is a smoke test rather than a complete application
 sandbox. Applications must choose their own rights and handle unsupported ABI
 levels according to their security requirements.
+
+## AppArmor selection from v0.4.1
+
+Linux 6.12 treats AppArmor and SELinux as exclusive major LSMs. Version 0.4.1
+selects AppArmor first for Docker confinement. Landlock and BPF remain active;
+SELinux stays compiled in for an explicit `lsm=` boot choice. An override must
+include every required LSM. Verify the active list after changing it.

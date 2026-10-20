@@ -4,34 +4,40 @@ Workload: full local regression suite, run once for each profile type.
 
 Exit codes: CPU run 0; allocation run 0 (zero means success).
 
-Source revision: `d7933a72884cd49a3ae75a6272c59fa87629ffae`.
+Source revision: `a734586f06795ee6f6fa7837a4dc39dd64e43410`.
 
-Tool version: `valgrind-3.22.0`.
+Tool version: `valgrind-3.27.1`.
 
-CPU profiles: 1200; allocation profiles: 1200.
+CPU profiles: 1281; allocation profiles: 1299.
 
 Callgrind counts executed instructions. Memcheck counts cumulative allocated bytes and objects. The two runs use the same test workload. These counts do not measure elapsed time.
 
 ## Highest instruction counts
 
-* 1087219797: `python3 tests/test-audit-regressions.py`
-* 1072775960: `python3 tests/test-blockjob-patch.py`
-* 1066746723: `python3 tests/test-postinst.py`
-* 818677316: `python3 tests/test-profile-summary.py`
-* 683893695: `python3 standard-input test`
-* 682974217: `python3 standard-input test`
+* 1494157426: `python3 tests/test-audit-regressions.py`
+* 1476613988: `python3 tests/test-blockjob-patch.py`
+* 1463759274: `python3 tests/test-postinst.py`
+* 869820426: `python3 tests/test-profile-summary.py`
+* 800263661: `python3 standard-input test`
+* 799515976: `python3 standard-input test`
 
 ## Largest allocations
 
-* 118169935 / 40782: `python3 tests/test-blockjob-patch.py`
-* 116189388 / 45840: `python3 tests/test-audit-regressions.py`
-* 111675825 / 40079: `python3 tests/test-postinst.py`
-* 85516474 / 31742: `python3 tests/test-profile-summary.py`
-* 82663802 / 75478: `cc1 tests/landlock-smoke.c`
-* 80331406 / 73752: `cc1 tests/network-smoke.c`
+* 146990468 / 38723: `python3 tests/test-blockjob-patch.py`
+* 140415311 / 43367: `python3 tests/test-audit-regressions.py`
+* 130447864 / 37956: `python3 tests/test-postinst.py`
+* 82622229 / 75473: `cc1 tests/landlock-smoke.c`
+* 80289833 / 73747: `cc1 tests/network-smoke.c`
+* 73056473 / 23334: `python3 tests/test-profile-summary.py`
 
 ## Analysis
 
 Python startup and imports use most of the measured work in the mock tests.
 The tests do not measure PVE runtime or guest performance. Each test keeps its
 process isolation. Raw profiles and temporary files are deleted after analysis.
+
+Local tests were extended while these captures were running. They are not an
+identical-workload comparison or a performance improvement measurement. The
+release workflow repeats both passes on the immutable tagged source. Python
+startup/import work dominates the test fixtures; security and process-isolation
+checks were retained. No PVE runtime performance claim is made.

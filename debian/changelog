@@ -1,3 +1,14 @@
+pve-microvm (0.4.1-1) trixie; urgency=high
+
+  * Enable built-in AppArmor and select it as the default major LSM, with
+    Landlock and BPF retained; keep SELinux available for explicit boot choice.
+  * Validate AppArmor settings/order after olddefconfig and boot-test an
+    enforcing profile with allowed and denied file writes.
+  * Keep guest DHCP/static network rules off Docker veth/bridge devices and
+    include udev for network device initialisation in standard templates.
+
+ -- Rui Carmo <rui.carmo@gmail.com>  Tue, 20 Oct 2026 20:00:00 +0000
+
 pve-microvm (0.4.0-1) trixie; urgency=high
 
   * Fix TUN policy routing and marks (#23): require built-in IPv4/IPv6

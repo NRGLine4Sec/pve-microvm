@@ -115,6 +115,7 @@ make olddefconfig >/dev/null 2>&1
 bash "$SCRIPT_DIR/check-landlock.sh" .config
 bash "$SCRIPT_DIR/check-erofs.sh" .config
 bash "$SCRIPT_DIR/check-network.sh" .config
+bash "$SCRIPT_DIR/check-apparmor.sh" .config
 cp .config "$KERNEL_DIR/kernel-config"
 
 # Verify critical configs survived olddefconfig

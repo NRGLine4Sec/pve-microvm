@@ -8,7 +8,7 @@ export PATH="$PATH:/usr/sbin:/sbin"
 kernel=${1:-$PVE_MICROVM_KERNEL_DIR/vmlinuz-microvm}
 work=$(mktemp -d "$PVE_MICROVM_RUN_DIR/smoke.XXXXXX")
 trap 'rm -rf "$work"' EXIT
-for tool in cc cpio qemu-system-x86_64 busybox mkfs.erofs ip iptables-legacy ip6tables-legacy ldd; do command -v "$tool" >/dev/null; done
+for tool in cc cpio qemu-system-x86_64 busybox mkfs.erofs ip iptables-legacy ip6tables-legacy apparmor_parser aa-exec ldd; do command -v "$tool" >/dev/null; done
 file "$(command -v busybox)" | grep -q 'statically linked' || { echo 'busybox-static required'; exit 1; }
 mkdir -p "$work/root"/{bin,etc,proc,sys,dev,tmp,run} "$work/erofs-source"
 printf 'EROFS boot smoke\n' > "$work/erofs-source/marker"
@@ -34,6 +34,14 @@ copy_binary() {
 }
 copy_binary "$(readlink -f "$(command -v ip)")"
 copy_binary "$(readlink -f "$(command -v iptables-legacy)")"
+copy_binary "$(readlink -f "$(command -v apparmor_parser)")"
+copy_binary "$(readlink -f "$(command -v aa-exec)")"
+cc -O2 -static -Wall -Wextra -Werror "$ROOT/tests/apparmor-smoke.c" -o "$work/root/bin/apparmor-smoke"
+mkdir -p "$work/root/etc/apparmor.d/abi"
+cp /etc/apparmor.d/abi/4.0 "$work/root/etc/apparmor.d/abi/"
+cp "$ROOT/tests/apparmor-smoke.profile" "$work/root/etc/apparmor.d/microvm-smoke"
+ln -sf "$(readlink -f "$(command -v apparmor_parser)")" "$work/root/bin/apparmor_parser"
+ln -sf "$(readlink -f "$(command -v aa-exec)")" "$work/root/bin/aa-exec"
 # Use a non-applet name so BusyBox standalone-shell optimisation cannot
 # substitute its limited ip applet for the copied iproute2 binary.
 ln -s "$(readlink -f "$(command -v ip)")" "$work/root/bin/iproute2"
@@ -49,7 +57,7 @@ done
 # Debian /usr-merge: the loader and copied ELF dependencies must resolve at
 # both /lib and /usr/lib paths, independently of the host's symlink layout.
 if [ -d "$work/root/lib" ]; then mkdir -p "$work/root/usr/lib"; cp -a "$work/root/lib/." "$work/root/usr/lib/"; fi
-for cmd in sh mount umount mkdir chown chmod cat grep cmp su env poweroff mknod awk tee; do ln -s busybox "$work/root/bin/$cmd"; done
+for cmd in sh mount umount mkdir chown chmod cat grep cmp su env poweroff mknod awk tee touch; do ln -s busybox "$work/root/bin/$cmd"; done
 printf 'root:x:0:0:root:/:/bin/sh\nnobody:x:65534:65534:nobody:/:/bin/sh\n' > "$work/root/etc/passwd"
 printf 'root:x:0:\nnogroup:x:65534:\n' > "$work/root/etc/group"
 cat > "$work/root/init" <<'INIT'
@@ -75,6 +83,14 @@ mkdir -p /sys/kernel/security
 mount -t securityfs securityfs /sys/kernel/security || { echo LANDLOCK_SMOKE_FAIL; poweroff -f; }
 cat /sys/kernel/security/lsm
 grep -qw landlock /sys/kernel/security/lsm || { echo LANDLOCK_SMOKE_FAIL; poweroff -f; }
+grep -qw apparmor /sys/kernel/security/lsm || { echo APPARMOR_SMOKE_FAIL; poweroff -f; }
+# Load an enforcing profile and test actual writes, not only feature presence.
+touch /tmp/aa-allowed /tmp/aa-denied
+printf 'original\n' > /tmp/aa-denied
+apparmor_parser -K -r /etc/apparmor.d/microvm-smoke || { echo APPARMOR_SMOKE_FAIL; poweroff -f; }
+aa-exec -p microvm-smoke -- /bin/apparmor-smoke || { echo APPARMOR_SMOKE_FAIL; poweroff -f; }
+grep -qx original /tmp/aa-denied || { echo APPARMOR_SMOKE_FAIL; poweroff -f; }
+echo APPARMOR_SMOKE_PASS
 mkdir -p /tmp/pve-microvm/runs/guest-smoke
 chown -R 65534:65534 /tmp/pve-microvm
 su nobody -s /bin/sh -c 'TMPDIR=/tmp/pve-microvm/runs/guest-smoke /bin/landlock-smoke'
@@ -93,6 +109,8 @@ if ! timeout 120 qemu-system-x86_64 -machine microvm,accel=tcg -m 256 \
 fi
 cat "$work/serial.log"
 grep -q '^LANDLOCK_SMOKE_PASS' "$work/serial.log"
+grep -q '^APPARMOR_SMOKE_PASS' "$work/serial.log"
+! grep -q 'APPARMOR_SMOKE_FAIL' "$work/serial.log"
 grep -q '^POLICY_ROUTING_SMOKE_PASS' "$work/serial.log"
 ! grep -q 'POLICY_ROUTING_SMOKE_FAIL' "$work/serial.log"
 grep -q '^EROFS_SMOKE_PASS' "$work/serial.log"

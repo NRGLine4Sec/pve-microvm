@@ -1,7 +1,7 @@
 # pve-microvm guest kernel
 
 `kernel/version` selects the default kernel for `make kernel` and the release
-CI source-cache key. Version 0.4.0 uses **Linux 6.12.113** from the 6.12 long-term
+CI source-cache key. Version 0.4.1 uses **Linux 6.12.113** from the 6.12 long-term
 support series.
 
 ## Build inputs and outputs
@@ -13,7 +13,9 @@ The builder starts with x86_64 `defconfig`. It merges
 kernel.
 
 The build checks the final config for required virtio and networking features.
-It also runs `check-landlock.sh`, `check-erofs.sh` and `check-network.sh`.
+It also runs `check-landlock.sh`, `check-erofs.sh`, `check-network.sh` and
+`check-apparmor.sh`. AppArmor precedes SELinux in the default LSM list because
+Linux 6.12 selects one exclusive major LSM. Landlock and BPF remain active.
 Required network features must be built in because the shipped initrd does not
 include arbitrary networking modules. The release includes `kernel-config`;
 the package installs it as `/usr/share/pve-microvm/kernel/build.config`.
@@ -35,6 +37,7 @@ no attached disks or network connections. Inside the guest, it checks:
 * IPv4/IPv6 TUN routing selected by packet marks. Real packets must also increase
   legacy iptables/ip6tables `MARK` and `CONNMARK` save/restore/match counters.
 * Plain and LZ4-compressed EROFS mounts, data reads and rejected writes.
+* An active AppArmor enforcing profile that allows one write and denies another.
 * Active Landlock, ABI 3 or later, and unprivileged filesystem restrictions that
   survive fork and exec.
 
