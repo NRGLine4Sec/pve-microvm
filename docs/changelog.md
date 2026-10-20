@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+* Enable built-in IPv4/IPv6 policy routing, packet/connection marks and IPv6
+  mangle support. Validate the normalised config and boot-test actual TUN
+  fwmark routing plus legacy iptables/ip6tables MARK/CONNMARK counters (#23).
+* Update the candidate kernel to 6.12.113 within the existing long-term series.
+  Centralise the version and CI cache key in `kernel/version`; document build
+  inputs and validation boundaries in [policy-routing.md](policy-routing.md).
+
 ## 0.3.29
 
 * Fix full clones from running microVMs: unversioned `microvm` bypasses the PVE

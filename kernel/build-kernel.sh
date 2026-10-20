@@ -5,7 +5,7 @@
 # (Firecracker base + PVE overlay), and produces a vmlinuz binary.
 #
 # Usage:
-#   ./build-kernel.sh [--version 6.12.22] [--output /path/to/vmlinuz]
+#   ./build-kernel.sh [--version VERSION] [--output /path/to/vmlinuz]
 #
 # Requirements: build-essential, flex, bison, libelf-dev, bc, libssl-dev, wget
 
@@ -20,7 +20,7 @@ pve_microvm_env kernel
 KERNEL_DIR=${PVE_MICROVM_KERNEL_DIR:-$PVE_MICROVM_BUILD_DIR/kernel}
 mkdir -p "$KERNEL_DIR" "$PVE_MICROVM_CACHE_DIR/kernel"
 
-DEFAULT_VERSION="6.12.22"
+DEFAULT_VERSION=$(cat "$SCRIPT_DIR/version")
 DEFAULT_OUTPUT="$KERNEL_DIR/vmlinuz-microvm"
 
 VERSION="$DEFAULT_VERSION"
@@ -32,7 +32,7 @@ while [[ $# -gt 0 ]]; do
         --version) VERSION="$2"; shift 2 ;;
         --output)  OUTPUT="$2"; shift 2 ;;
         -h|--help)
-            echo "Usage: $0 [--version 6.12.22] [--output /path/to/vmlinuz]"
+            echo "Usage: $0 [--version VERSION] [--output /path/to/vmlinuz]"
             exit 0
             ;;
         *)  shift ;;
@@ -114,6 +114,7 @@ fi
 make olddefconfig >/dev/null 2>&1
 bash "$SCRIPT_DIR/check-landlock.sh" .config
 bash "$SCRIPT_DIR/check-erofs.sh" .config
+bash "$SCRIPT_DIR/check-network.sh" .config
 cp .config "$KERNEL_DIR/kernel-config"
 
 # Verify critical configs survived olddefconfig

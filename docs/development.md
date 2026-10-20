@@ -66,6 +66,19 @@ make kernel
 git tag -a v0.X.Y -m "..." && git push origin v0.X.Y
 ```
 
+The kernel build starts with x86_64 `defconfig`, merges
+`kernel/pve-microvm-6.12.config` and `kernel/pve-microvm-overlay.config`, then runs
+`olddefconfig`. The retained `base-x86_64-6.1.config` is a reference, not a build
+input. `kernel/version` selects the default long-term kernel, currently 6.12.113.
+The generated configuration is checked for built-in security, EROFS and network
+primitives before compilation, and shipped as `kernel/build.config`.
+
+Release CI boots the resulting kernel under isolated QEMU/TCG and checks
+Landlock, EROFS, dual-stack TUN policy routing and mark handling. See the
+[policy-routing test and upgrade rationale](policy-routing.md) for coverage and
+limits. `make test` runs local mock/build-contract tests; `make test-profile`
+captures pre-release CPU/allocation data, analyses it and deletes raw captures.
+
 ## Testing locally
 
 ```bash

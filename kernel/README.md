@@ -1,146 +1,72 @@
-# pve-microvm kernel
+# pve-microvm guest kernel
 
-This directory contains the kernel configuration and build tooling for
-pve-microvm guests.
+`kernel/version` selects the default Linux release for `make kernel` and the
+release CI source-cache key. The current development candidate is **6.12.113**,
+an update within the existing 6.12 long-term series.
 
-## Choice of base config
+## Build inputs and outputs
 
-We use the **Firecracker `microvm-kernel-ci-x86_64-6.1` config** as the base,
-targeting **kernel 6.12 LTS** for builds (forward-compatible with PVE 9's
-host kernel 6.14).
+The builder runs x86_64 `defconfig`, merges `pve-microvm-6.12.config`, merges
+`pve-microvm-overlay.config`, then runs `olddefconfig`. The retained Firecracker
+`base-x86_64-6.1.config` is a reference only. Editing it does not change the shipped
+kernel. The effective generated config, rather than an input fragment alone,
+determines available features.
 
-### Why Firecracker's config?
+After normalisation, the build verifies required virtio/networking settings and
+runs `check-landlock.sh`, `check-erofs.sh` and `check-network.sh`. Required network
+primitives must be built in: the shipped initrd does not include arbitrary
+networking modules. The generated `kernel-config` accompanies release artifacts
+and is packaged as `/usr/share/pve-microvm/kernel/build.config`.
 
-| Criterion | Alpine `linux-virt` | Firecracker CI | Custom `tinyconfig` |
-|---|---|---|---|
-| virtio-mmio | ✅ built-in | ✅ built-in | needs manual setup |
-| virtio-blk | ⚠️ module | ✅ built-in | needs manual setup |
-| virtio-net | ⚠️ module | ✅ built-in | needs manual setup |
-| virtio-console | ✅ built-in | ✅ built-in | needs manual setup |
-| ext4 | ⚠️ module | ✅ built-in | needs manual setup |
-| Direct boot (no initrd) | ❌ needs initrd | ✅ works | ✅ works |
-| Serial console | ✅ | ✅ | needs manual setup |
-| Namespaces | ✅ | ✅ all 6 | needs manual setup |
-| Cgroups | ✅ | ✅ | needs manual setup |
-| Seccomp | ✅ | ✅ | needs manual setup |
-| OverlayFS | ⚠️ module | ✅ built-in | needs manual setup |
-| FUSE | ⚠️ module | ✅ built-in | needs manual setup |
-| IPv6 | ✅ | ✅ | needs manual setup |
-| Netfilter | ✅ | ✅ | needs manual setup |
-| Kernel size | ~12 MB | ~6–8 MB | ~2–4 MB |
-| Maintenance | Alpine team | AWS/Firecracker | you |
+Host downloads, compilation and temporary files use the project-owned scratch
+resolver. By default on a local workspace, outputs are under
+`/workspace/tmp/pve-microvm/build/kernel/`; CI and explicit overrides use the same
+project hierarchy. See [development instructions](../docs/development.md).
 
-**The critical advantage**: Firecracker's config has all virtio drivers,
-filesystems, and networking **built-in** (`=y`), not as modules (`=m`).
-This means microvm guests can boot with just `-kernel vmlinuz` — no initrd
-or module loading infrastructure needed.
+## Supported boot path and checks
 
-Alpine's `linux-virt` is excellent but ships virtio-blk, virtio-net, and ext4
-as modules, which means you **must** also provide an initramfs. For a
-"just works" microvm experience, built-in drivers are essential.
+The normal guest boots with the shipped kernel **and initrd**. PVE's microVM
+builder uses PCIe non-transitional virtio devices for Linux guests. The initrd
+mounts the guest root filesystem and hands control to its init process.
 
-## PVE overlay
+Release CI boots the built kernel under isolated QEMU/TCG without disks or
+network connections and checks:
 
-On top of the Firecracker base, we apply `pve-microvm-overlay.config` which adds:
+* IPv4/IPv6 TUN policy rules and packet delivery selected by fwmark; real legacy
+  iptables/ip6tables MARK and CONNMARK save/restore/match counters.
+* Plain and LZ4-compressed EROFS mounting, data reads and read-only enforcement.
+* Active Landlock selection, ABI 3+ and unprivileged write/truncate/rename
+  confinement with fork/exec inheritance.
 
-| Feature | Config | Why |
-|---|---|---|
-| VLAN 802.1Q | `CONFIG_VLAN_8021Q=y` | Proxmox bridges use VLAN tags |
-| cgroup controllers | `CONFIG_MEMCG=y`, `CGROUP_PIDS`, etc. | systemd guests, container workloads |
-| TUN/TAP | `CONFIG_TUN=y` | VPNs, Tailscale, OpenVPN, userspace WireGuard, CNI plugins |
-| iptables/nftables | `CONFIG_NF_CONNTRACK=y`, `CONFIG_NFT_NAT=y`, etc. | Firewall/NAT/masquerade inside guests |
-| XFS | `CONFIG_XFS_FS=y` | Alternative rootfs filesystem |
-| Loop device | `CONFIG_BLK_DEV_LOOP=y` | Mount images inside guest |
-| Watchdog | `CONFIG_SOFT_WATCHDOG=y` | Guest health monitoring |
-
-## Feature audit
-
-### ✅ Supported (built-in)
-
-- virtio-mmio transport
-- virtio-blk (block devices)
-- virtio-net (networking)
-- virtio-console (guest agent channel)
-- virtio-balloon (memory management)
-- virtio-rng (hardware RNG)
-- virtio-vsock (host↔guest sockets)
-- Serial 8250 + console
-- ext4, OverlayFS, FUSE, SquashFS, XFS
-- devtmpfs (auto-mount)
-- Full IPv4 + IPv6 networking
-- Netfilter + conntrack + NAT
-- All 6 Linux namespaces (user, pid, net, uts, ipc, mount)
-- Cgroups v1 + v2
-- Seccomp + BPF
-- inotify, epoll, signalfd, timerfd, eventfd
-- ELF + script binary formats
-
-### ❌ Not included (by design)
-
-- PCI bus / PCIe (not used by microvm)
-- VGA / framebuffer / DRM
-- USB / HID
-- Sound / audio
-- ACPI (microvm has no ACPI)
-- Wireless networking
-- Bluetooth
-- Filesystem: NTFS, FAT (add if needed)
-- Kernel module loading (everything is built-in)
+The tests do not establish full Tailscale connectivity, every filesystem codec,
+or every supported guest distribution. Kernel upgrades also need a normal
+PVE-guest canary before wider rollout. Running guests keep their existing kernel
+until restarted; installation does not reboot them.
 
 ## Building
 
-### Prerequisites
+On a Debian/Ubuntu build host:
 
-```bash
-apt install build-essential flex bison libelf-dev bc libssl-dev wget
+```sh
+sudo apt install build-essential flex bison libelf-dev bc libssl-dev wget cpio busybox-static
+make kernel
 ```
 
-### Build
+To test a different release while keeping outputs under project scratch:
 
-```bash
-cd kernel/
-./build-kernel.sh
-
-# Or with a specific kernel version:
-./build-kernel.sh --version 6.12.22 --output ./vmlinuz-microvm
+```sh
+bash tools/pve-microvm-env.sh --exec kernel bash kernel/build-kernel.sh --version 6.12.113
 ```
 
-### Install on Proxmox node
+For the isolated boot gate, install `qemu-system-x86 erofs-utils iproute2 iptables`
+and run:
 
-```bash
-scp vmlinuz-microvm root@pve-node:/usr/share/pve-microvm/vmlinuz
+```sh
+bash tests/boot-landlock.sh /path/to/project/build/kernel/vmlinuz-microvm
 ```
 
-### Use with a microvm guest
+Use `make deb` to package the staged kernel and initrd. Publish and validate an
+intentional release through the project release workflow; do not replace kernel
+files on managed hosts as part of ordinary local testing.
 
-```bash
-qm set 900 --args '-kernel /usr/share/pve-microvm/vmlinuz -append "console=ttyS0 root=/dev/vda rw quiet"'
-```
-
-## Files
-
-| File | Description |
-|---|---|
-| `base-x86_64-6.1.config` | Firecracker's microvm CI kernel config (6.1 LTS, x86_64) |
-| `pve-microvm-overlay.config` | PVE-specific additions (VLAN, cgroups, iptables, XFS) |
-| `build-kernel.sh` | Automated kernel download + build script |
-
-## Updating the base config
-
-When Firecracker updates their kernel config (e.g., for a new LTS series):
-
-1. Download the new config from
-   `https://github.com/firecracker-microvm/firecracker/tree/main/resources/guest_configs`
-2. Replace `base-x86_64-6.1.config`
-3. Verify the overlay still applies cleanly
-4. Rebuild and test
-
-## Known issue: Firecracker 6.1 config on kernel 6.12
-
-`make olddefconfig` on kernel 6.12 sources with the Firecracker 6.1 base
-config **silently drops** `CONFIG_VIRTIO_NET`, `CONFIG_VIRTIO_BALLOON`, and
-`CONFIG_VIRTIO_CONSOLE` due to changed Kconfig dependencies.
-
-The PVE overlay explicitly forces these back to `=y`. If you update the
-base config or kernel version, always verify these are present in the
-final `.config` after `olddefconfig`.
+[Policy-routing implementation and upgrade assessment](../docs/policy-routing.md).

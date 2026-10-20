@@ -20,7 +20,7 @@ test-profile:
 	$(ENV_HELPER) tests bash scripts/test-profile.sh
 
 kernel:
-	$(ENV_HELPER) kernel bash kernel/build-kernel.sh --version 6.12.22
+	$(ENV_HELPER) kernel bash kernel/build-kernel.sh
 
 install:
 	$(ENV_HELPER) install $(MAKE) install-internal
@@ -54,7 +54,8 @@ install-internal:
 	install -m 644 kernel/base-x86_64-6.1.config $(DESTDIR)/usr/share/pve-microvm/kernel/
 	install -m 644 tests/landlock-smoke.c $(DESTDIR)/usr/share/pve-microvm/kernel/
 	install -m 755 kernel/check-landlock.sh $(DESTDIR)/usr/share/pve-microvm/kernel/
-	install -m 755 kernel/check-erofs.sh $(DESTDIR)/usr/share/pve-microvm/kernel/
+	install -m 755 kernel/check-erofs.sh kernel/check-network.sh $(DESTDIR)/usr/share/pve-microvm/kernel/
+	install -m 644 kernel/version $(DESTDIR)/usr/share/pve-microvm/kernel/
 	install -m 644 kernel/pve-microvm-overlay.config $(DESTDIR)/usr/share/pve-microvm/kernel/
 
 deb:

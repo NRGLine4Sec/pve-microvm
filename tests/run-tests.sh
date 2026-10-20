@@ -307,6 +307,8 @@ run_test "Landlock effective config and guest test compile" bash tests/test-land
 
 run_test "BlockJob microvm mirror patch and dispatch" python3 tests/test-blockjob-patch.py
 
+run_test "Dual-stack policy routing and marks build contract" bash tests/test-network-build.sh
+
 log "Patch-script safety contracts"
 run_test "patch script has stamp/idempotency guard" assert_file_contains tools/pve-microvm-patch 'patches already applied'
 run_test "patch script delegates config_to_command once per apply path" assert_file_contains tools/pve-microvm-patch 'delegate to microvm command builder'

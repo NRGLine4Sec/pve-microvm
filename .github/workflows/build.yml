@@ -47,13 +47,13 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq \
             build-essential flex bison bc libelf-dev libssl-dev wget \
-            cpio busybox-static qemu-system-x86 erofs-utils
+            cpio busybox-static qemu-system-x86 erofs-utils iproute2 iptables
 
       - name: Cache kernel source
         uses: actions/cache@v5
         with:
           path: ${{ runner.temp }}/pve-microvm/cache/kernel/linux-*.tar.xz
-          key: kernel-source-6.12.22
+          key: kernel-source-${{ hashFiles('kernel/version') }}
 
       - name: Build kernel
         run: |
@@ -61,7 +61,7 @@ jobs:
           ls -lh "$PROJECT_TMP_ROOT/build/kernel/vmlinuz-microvm" "$PROJECT_TMP_ROOT/build/kernel/initrd-microvm"
           file "$PROJECT_TMP_ROOT/build/kernel/vmlinuz-microvm"
 
-      - name: Boot kernel and verify Landlock plus EROFS
+      - name: Boot kernel and verify security, filesystems and TUN routing
         run: bash tests/boot-landlock.sh "$PROJECT_TMP_ROOT/build/kernel/vmlinuz-microvm"
 
       - name: Upload kernel artifacts

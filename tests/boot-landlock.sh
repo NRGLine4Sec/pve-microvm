@@ -4,12 +4,13 @@ set -euo pipefail
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 source "$ROOT/tools/pve-microvm-env.sh"
 pve_microvm_env landlock-boot
+export PATH="$PATH:/usr/sbin:/sbin"
 kernel=${1:-$PVE_MICROVM_KERNEL_DIR/vmlinuz-microvm}
 work=$(mktemp -d "$PVE_MICROVM_RUN_DIR/smoke.XXXXXX")
 trap 'rm -rf "$work"' EXIT
-for tool in cc cpio qemu-system-x86_64 busybox mkfs.erofs; do command -v "$tool" >/dev/null; done
+for tool in cc cpio qemu-system-x86_64 busybox mkfs.erofs ip iptables-legacy ip6tables-legacy ldd; do command -v "$tool" >/dev/null; done
 file "$(command -v busybox)" | grep -q 'statically linked' || { echo 'busybox-static required'; exit 1; }
-mkdir -p "$work/root"/{bin,etc,proc,sys,dev,tmp} "$work/erofs-source"
+mkdir -p "$work/root"/{bin,etc,proc,sys,dev,tmp,run} "$work/erofs-source"
 printf 'EROFS boot smoke\n' > "$work/erofs-source/marker"
 # Force compressed data blocks, rather than testing only inline/uncompressed data.
 awk 'BEGIN { for (i = 0; i < 4096; i++) print "EROFS compressed data block" }' > "$work/erofs-source/payload"
@@ -18,7 +19,37 @@ mkfs.erofs -zlz4hc "$work/root/erofs-lz4.img" "$work/erofs-source" >> "$work/mkf
 cp "$work/erofs-source/payload" "$work/root/expected-payload"
 cc -O2 -static -Wall -Wextra -Werror "$ROOT/tests/landlock-smoke.c" -o "$work/root/bin/landlock-smoke"
 cp "$(command -v busybox)" "$work/root/bin/busybox"
-for cmd in sh mount umount mkdir chown chmod cat grep cmp su env poweroff; do ln -s busybox "$work/root/bin/$cmd"; done
+cc -O2 -static -Wall -Wextra -Werror "$ROOT/tests/network-smoke.c" -o "$work/root/bin/network-smoke"
+cp "$ROOT/tests/network-smoke.sh" "$work/root/bin/network-smoke.sh"
+# iproute2 and legacy xtables are dynamic binaries. Copy their resolved shared
+# libraries plus extension plugins into this disposable initramfs.
+copy_binary() {
+    local binary=$1 library
+    mkdir -p "$work/root$(dirname "$binary")"
+    cp -L "$binary" "$work/root$binary"
+    while read -r library; do
+        mkdir -p "$work/root$(dirname "$library")"
+        cp -L "$library" "$work/root$library"
+    done < <(ldd "$binary" | awk '{for(i=1;i<=NF;i++) if ($i ~ /^\//) print $i}')
+}
+copy_binary "$(readlink -f "$(command -v ip)")"
+copy_binary "$(readlink -f "$(command -v iptables-legacy)")"
+# Use a non-applet name so BusyBox standalone-shell optimisation cannot
+# substitute its limited ip applet for the copied iproute2 binary.
+ln -s "$(readlink -f "$(command -v ip)")" "$work/root/bin/iproute2"
+for name in iptables-legacy ip6tables-legacy; do
+    ln -sf "$(readlink -f "$(command -v "$name")")" "$work/root/bin/$name"
+done
+# Plugins may have dependencies beyond the main xtables binary.
+xtables_dir=$(dirname "$(find /usr/lib -name libxt_MARK.so -print -quit)")
+[ -n "$xtables_dir" ] && [ -f "$xtables_dir/libxt_MARK.so" ]
+for plugin in "$xtables_dir"/libxt_{mark,connmark,MARK,CONNMARK,udp,standard}.so; do
+    copy_binary "$plugin"
+done
+# Debian /usr-merge: the loader and copied ELF dependencies must resolve at
+# both /lib and /usr/lib paths, independently of the host's symlink layout.
+if [ -d "$work/root/lib" ]; then mkdir -p "$work/root/usr/lib"; cp -a "$work/root/lib/." "$work/root/usr/lib/"; fi
+for cmd in sh mount umount mkdir chown chmod cat grep cmp su env poweroff mknod awk tee; do ln -s busybox "$work/root/bin/$cmd"; done
 printf 'root:x:0:0:root:/:/bin/sh\nnobody:x:65534:65534:nobody:/:/bin/sh\n' > "$work/root/etc/passwd"
 printf 'root:x:0:\nnogroup:x:65534:\n' > "$work/root/etc/group"
 cat > "$work/root/init" <<'INIT'
@@ -28,6 +59,8 @@ mount -t proc proc /proc
 mount -t sysfs sysfs /sys
 mount -t devtmpfs devtmpfs /dev
 mount -t tmpfs tmpfs /tmp
+export PATH=/bin:/usr/bin:/sbin:/usr/sbin
+/bin/sh /bin/network-smoke.sh || { echo POLICY_ROUTING_SMOKE_FAIL; poweroff -f; }
 mkdir -p /mnt/erofs
 for image in /erofs-plain.img /erofs-lz4.img; do
     mount -t erofs -o loop,ro "$image" /mnt/erofs || { echo EROFS_SMOKE_FAIL; poweroff -f; }
@@ -60,6 +93,8 @@ if ! timeout 120 qemu-system-x86_64 -machine microvm,accel=tcg -m 256 \
 fi
 cat "$work/serial.log"
 grep -q '^LANDLOCK_SMOKE_PASS' "$work/serial.log"
+grep -q '^POLICY_ROUTING_SMOKE_PASS' "$work/serial.log"
+! grep -q 'POLICY_ROUTING_SMOKE_FAIL' "$work/serial.log"
 grep -q '^EROFS_SMOKE_PASS' "$work/serial.log"
 ! grep -q 'EROFS_SMOKE_FAIL' "$work/serial.log"
 ! grep -q 'LANDLOCK_SMOKE_FAIL' "$work/serial.log"
